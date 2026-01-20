@@ -1,10 +1,22 @@
-import { User } from '../models/user.model';
+import { UserModel, IUser } from "../models/user.model.ts";
 
-export const findUserByEmail = (email: string) =>
-  User.findOne({ email });
+export interface IUserRepository {
+  getUserByEmail(email: string): Promise<IUser | null>;
+  getUserByUsername(username: string): Promise<IUser | null>;
+  createUser(userData: Partial<IUser>): Promise<IUser>;
+}
 
-export const createUser = (data: {
-  email: string;
-  password: string;
-  role?: string;
-}) => User.create(data);
+export class UserRepository implements IUserRepository {
+  async createUser(userData: Partial<IUser>): Promise<IUser> {
+    const user = new UserModel(userData);
+    return await user.save();
+  }
+
+  async getUserByEmail(email: string): Promise<IUser | null> {
+    return await UserModel.findOne({ email });
+  }
+
+  async getUserByUsername(username: string): Promise<IUser | null> {
+    return await UserModel.findOne({ username });
+  }
+}
