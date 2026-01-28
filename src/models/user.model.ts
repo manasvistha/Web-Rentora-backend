@@ -15,7 +15,7 @@ export interface IUser extends Document {
   comparePassword(password: string): Promise<boolean>;
 }
 
-// 2. Define the Schema
+
 const UserSchema: Schema = new Schema<IUser>(
   {
     name: { 
@@ -30,11 +30,11 @@ const UserSchema: Schema = new Schema<IUser>(
       trim: true, 
       lowercase: true 
     },
-    // Fix: Make username optional with sparse index
+
     username: { 
       type: String, 
       unique: true, 
-      sparse: true, // Only enforces uniqueness if the field exists
+      sparse: true, 
       trim: true,
       lowercase: true,
       default: null 
@@ -58,8 +58,8 @@ const UserSchema: Schema = new Schema<IUser>(
       virtuals: true,
       versionKey: false,
       transform: (doc, ret) => {
-        ret.id = ret._id.toString();
         const response = ret as any;
+        response.id = ret._id.toString();
         delete response._id;
         delete response.__v;
         delete response.password;
@@ -69,21 +69,19 @@ const UserSchema: Schema = new Schema<IUser>(
   }
 );
 
-// 3. Password Hashing (Pre-save hook)
-UserSchema.pre<IUser>("save", async function (next) {
-  if (!this.isModified("password")) return next();
-  try {
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
-    next();
-  } catch (error: any) {
-    next(error);
-  }
-});
+// UserSchema.pre<IUser>("save", async function (next) {
+//   if (!this.isModified("password")) return next();
+//   try {
+//     const salt = await bcrypt.genSalt(10);
+//     this.password = await bcrypt.hash(this.password, salt);
+//     next();
+//   } catch (error: any) {
+//     next(error);
+//   }
+// });
 
-// 4. Helper method for Login
-UserSchema.methods.comparePassword = async function (enteredPassword: string): Promise<boolean> {
-  return await bcrypt.compare(enteredPassword, this.password);
-};
+// UserSchema.methods.comparePassword = async function (enteredPassword: string): Promise<boolean> {
+//   return await bcrypt.compare(enteredPassword, this.password);
+// };
 
 export const UserModel = mongoose.model<IUser>("User", UserSchema);

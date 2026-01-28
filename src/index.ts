@@ -78,7 +78,7 @@ app.use('/api/auth', authRoutes);
 
 // Health Check
 app.get('/', (req, res) => {
-  res.status(200).json({ success: true, message: "🚀 Rentora API is live" });
+  res.status(200).json({ success: true, message: "Rentora API is live" });
 });
 
 // Static files for images
