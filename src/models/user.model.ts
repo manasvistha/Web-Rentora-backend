@@ -8,6 +8,7 @@ export interface IUser extends Document {
   email: string;
   username?: string; // Optional in TypeScript
   password: string;
+  profilePicture?: string;
   role: 'user' | 'admin';
   createdAt: Date;
   updatedAt: Date;
@@ -37,6 +38,9 @@ const UserSchema: Schema = new Schema<IUser>(
       trim: true,
       lowercase: true,
       default: null 
+    },
+    profilePicture: {
+      type: String
     },
     password: { 
       type: String, 
