@@ -9,7 +9,17 @@ export class AuthController {
   async register(req: Request, res: Response) {
     try {
       // 1. Validate incoming data with Zod
-      const validatedData = registerDTO.parse(req.body);
+      const parseResult = registerDTO.safeParse(req.body);
+      
+      if (!parseResult.success) {
+        return res.status(400).json({ 
+          success: false,
+          message: "Validation failed",
+          errors: parseResult.error.issues
+        });
+      }
+      
+      const validatedData = parseResult.data;
       
       // 2. Call service to create user
       const user = await authService.register(validatedData);
@@ -18,16 +28,15 @@ export class AuthController {
       return res.status(201).json({ 
         success: true,
         message: "Registration successful", 
-        user // Matching: response.data['user'] in Flutter register()
+        user: user.toJSON() // Make sure to call toJSON to exclude password
       });
     } catch (error: any) {
-      console.error("Registration Error Details:", error.errors || error.message); 
+      console.error("Registration Error Details:", error.message); 
       
       return res.status(400).json({ 
         success: false,
-        // Send a readable message for the Flutter UI
-        message: error.errors ? error.errors[0].message : error.message,
-        error: error.errors || error.message 
+        message: error.message || "Registration failed",
+        error: error.message 
       });
     }
   }
@@ -35,10 +44,23 @@ export class AuthController {
   async login(req: Request, res: Response) {
     try {
       // 1. Validate credentials
-      const validatedData = loginDTO.parse(req.body);
+      const parseResult = loginDTO.safeParse(req.body);
+      
+      if (!parseResult.success) {
+        return res.status(400).json({ 
+          success: false,
+          message: "Validation failed",
+          errors: parseResult.error.issues
+        });
+      }
+      
+      const validatedData = parseResult.data;
       
       // 2. Perform login via service
       const result = await authService.login(validatedData);
+      
+      console.log('✅ Login successful for user:', result.user._id);
+      console.log('📝 Token generated (first 20 chars):', result.token.substring(0, 20) + '...');
       
       // 3. Return response - Flutter looks for 'token' and 'data'
       // result should be { user: IUser, token: string }
@@ -62,7 +84,10 @@ export class AuthController {
   async getProfile(req: Request, res: Response) {
     try {
       // User is attached to req by the authorize middleware
+      // The JWT payload has 'id' property (not '_id')
       const userId = (req as any).user.id;
+      
+      console.log('🔍 Fetching profile for user ID:', userId);
       
       const user = await authService.getUserById(userId);
       
@@ -72,6 +97,13 @@ export class AuthController {
           message: "User not found"
         });
       }
+      
+      console.log('📸 User profile data:', {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        profilePicture: user.profilePicture || 'NOT SET'
+      });
       
       return res.status(200).json({
         success: true,
@@ -83,6 +115,46 @@ export class AuthController {
       return res.status(500).json({
         success: false,
         message: error.message || "Failed to get profile"
+      });
+    }
+  }
+
+  // Upload profile picture (protected route)
+  async uploadPhoto(req: Request, res: Response) {
+    try {
+      const userId = (req as any).user.id;
+      const file = (req as any).file;
+
+      if (!file) {
+        return res.status(400).json({
+          success: false,
+          message: "No file uploaded"
+        });
+      }
+
+      // Construct the URL for the uploaded file
+      // The file is saved in uploads/profile-pictures/
+      const photoUrl = `/public/profile-pictures/${file.filename}`;
+
+      // Update user's profilePicture in database
+      const updatedUser = await authService.updateProfilePicture(userId, photoUrl);
+
+      console.log('📸 Profile picture uploaded:', photoUrl);
+
+      return res.status(200).json({
+        success: true,
+        message: "Profile picture uploaded successfully",
+        data: {
+          photoUrl: photoUrl,
+          user: updatedUser
+        }
+      });
+    } catch (error: any) {
+      console.error("Upload Photo Error:", error.message);
+      
+      return res.status(500).json({
+        success: false,
+        message: error.message || "Failed to upload photo"
       });
     }
   }

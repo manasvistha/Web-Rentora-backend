@@ -1,4 +1,5 @@
 import mongoose, { Document, Schema } from "mongoose";
+import { NextFunction } from "express";
 import bcrypt from "bcryptjs";
 
 // 1. Define the interface for the Document
@@ -80,8 +81,18 @@ const UserSchema: Schema = new Schema<IUser>(
 //   }
 // });
 
-// UserSchema.methods.comparePassword = async function (enteredPassword: string): Promise<boolean> {
-//   return await bcrypt.compare(enteredPassword, this.password);
-// };
+UserSchema.pre<IUser>("save", async function () {
+  if (!this.isModified("password")) return;
+  try {
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
+  } catch (error: any) {
+    throw error;
+  }
+});
+
+UserSchema.methods.comparePassword = async function (enteredPassword: string): Promise<boolean> {
+  return await bcrypt.compare(enteredPassword, this.password);
+};
 
 export const UserModel = mongoose.model<IUser>("User", UserSchema);

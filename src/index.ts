@@ -83,6 +83,7 @@ app.get('/', (req, res) => {
 
 // Static files for images
 app.use('/public', express.static(path.join(__dirname, '../public')));
+app.use('/public/profile-pictures', express.static(path.join(__dirname, '../uploads/profile-pictures')));
 
 // 8. ERROR HANDLER
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {

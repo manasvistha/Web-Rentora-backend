@@ -48,4 +48,15 @@ export class AuthService {
     const user = await UserModel.findById(userId).select("-password");
     return user ? user.toJSON() : null;
   }
+
+  async updateProfilePicture(userId: string, photoUrl: string) {
+    // Update user's profilePicture field
+    const user = await UserModel.findByIdAndUpdate(
+      userId,
+      { profilePicture: photoUrl },
+      { new: true } // Return the updated document
+    ).select("-password");
+    
+    return user ? user.toJSON() : null;
+  }
 }
