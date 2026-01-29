@@ -1,23 +1,161 @@
-import { Request, Response } from 'express';
-import { registerDto, loginDto } from '../dtos/user.dto';
-import { registerUser, loginUser } from '../services/user.service';
+import { Request, Response } from "express";
+import { AuthService } from "../services/auth.service";
+import { registerDTO, loginDTO } from "../dtos/user.dto";
 
-export const register = async (req: Request, res: Response) => {
-  try {
-    const data = registerDto.parse(req.body);
-    const user = await registerUser(data.email, data.password);
-    res.status(201).json({ email: user.email, role: user.role });
-  } catch (e: any) {
-    res.status(400).json({ message: e.message });
-  }
-};
+const authService = new AuthService();
 
-export const login = async (req: Request, res: Response) => {
-  try {
-    const data = loginDto.parse(req.body);
-    const token = await loginUser(data.email, data.password);
-    res.json({ token });
-  } catch (e: any) {
-    res.status(400).json({ message: e.message });
+export class AuthController {
+  // src/controllers/auth.controller.ts
+  async register(req: Request, res: Response) {
+    try {
+      // 1. Validate incoming data with Zod
+      const parseResult = registerDTO.safeParse(req.body);
+      
+      if (!parseResult.success) {
+        return res.status(400).json({ 
+          success: false,
+          message: "Validation failed",
+          errors: parseResult.error.issues
+        });
+      }
+      
+      const validatedData = parseResult.data;
+      
+      // 2. Call service to create user
+      const user = await authService.register(validatedData);
+      
+      // 3. Return response - Flutter looks for 'success' and 'user'
+      return res.status(201).json({ 
+        success: true,
+        message: "Registration successful", 
+        user: user.toJSON() // Make sure to call toJSON to exclude password
+      });
+    } catch (error: any) {
+      console.error("Registration Error Details:", error.message); 
+      
+      return res.status(400).json({ 
+        success: false,
+        message: error.message || "Registration failed",
+        error: error.message 
+      });
+    }
   }
-};
+
+  async login(req: Request, res: Response) {
+    try {
+      // 1. Validate credentials
+      const parseResult = loginDTO.safeParse(req.body);
+      
+      if (!parseResult.success) {
+        return res.status(400).json({ 
+          success: false,
+          message: "Validation failed",
+          errors: parseResult.error.issues
+        });
+      }
+      
+      const validatedData = parseResult.data;
+      
+      // 2. Perform login via service
+      const result = await authService.login(validatedData);
+      
+      console.log('✅ Login successful for user:', result.user._id);
+      console.log('📝 Token generated (first 20 chars):', result.token.substring(0, 20) + '...');
+      
+      // 3. Return response - Flutter looks for 'token' and 'data'
+      // result should be { user: IUser, token: string }
+      return res.status(200).json({
+        success: true,
+        token: result.token, // Matching: response.data['token'] in Flutter login()
+        data: result.user    // Matching: response.data['data'] in Flutter login()
+      });
+    } catch (error: any) {
+      console.error("Login Error Details:", error.message);
+      
+      return res.status(401).json({ 
+        success: false,
+        message: error.message || "Login failed",
+        error: error.message 
+      });
+    }
+  }
+
+  // Get current user profile (protected route)
+  async getProfile(req: Request, res: Response) {
+    try {
+      // User is attached to req by the authorize middleware
+      // The JWT payload has 'id' property (not '_id')
+      const userId = (req as any).user.id;
+      
+      console.log('🔍 Fetching profile for user ID:', userId);
+      
+      const user = await authService.getUserById(userId);
+      
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: "User not found"
+        });
+      }
+      
+      console.log('📸 User profile data:', {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        profilePicture: user.profilePicture || 'NOT SET'
+      });
+      
+      return res.status(200).json({
+        success: true,
+        data: user
+      });
+    } catch (error: any) {
+      console.error("Get Profile Error:", error.message);
+      
+      return res.status(500).json({
+        success: false,
+        message: error.message || "Failed to get profile"
+      });
+    }
+  }
+
+  // Upload profile picture (protected route)
+  async uploadPhoto(req: Request, res: Response) {
+    try {
+      const userId = (req as any).user.id;
+      const file = (req as any).file;
+
+      if (!file) {
+        return res.status(400).json({
+          success: false,
+          message: "No file uploaded"
+        });
+      }
+
+      // Construct the URL for the uploaded file
+      // The file is saved in uploads/profile-pictures/
+      const photoUrl = `/public/profile-pictures/${file.filename}`;
+
+      // Update user's profilePicture in database
+      const updatedUser = await authService.updateProfilePicture(userId, photoUrl);
+
+      console.log('📸 Profile picture uploaded:', photoUrl);
+
+      return res.status(200).json({
+        success: true,
+        message: "Profile picture uploaded successfully",
+        data: {
+          photoUrl: photoUrl,
+          user: updatedUser
+        }
+      });
+    } catch (error: any) {
+      console.error("Upload Photo Error:", error.message);
+      
+      return res.status(500).json({
+        success: false,
+        message: error.message || "Failed to upload photo"
+      });
+    }
+  }
+}
