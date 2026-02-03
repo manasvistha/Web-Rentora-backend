@@ -8,12 +8,20 @@ export class AdminController {
     try {
       const file = (req as any).file;
 
+      // Validate required fields
+      if (!req.body?.name || !req.body?.email || !req.body?.password) {
+        return res.status(400).json({
+          success: false,
+          message: "Name, email, and password are required",
+        });
+      }
+
       const userData: any = {
-        name: req.body?.name,
-        email: req.body?.email,
-        password: req.body?.password,
-        username: req.body?.username || undefined,
-        role: req.body?.role || "user",
+        name: req.body.name,
+        email: req.body.email,
+        password: req.body.password,
+        username: req.body.username || undefined,
+        role: req.body.role || "user",
       };
 
       if (file) {
@@ -22,12 +30,20 @@ export class AdminController {
 
       const user = await userService.createUser(userData);
 
+      if (!user) {
+        return res.status(400).json({
+          success: false,
+          message: "Failed to create user",
+        });
+      }
+
       return res.status(201).json({
         success: true,
         message: "User created successfully",
         data: user,
       });
     } catch (error: any) {
+      console.error("Admin create user error:", error.message);
       return res.status(400).json({
         success: false,
         message: error.message || "Failed to create user",
@@ -64,9 +80,14 @@ export class AdminController {
 
       return res.status(200).json({
         success: true,
-        data: user,
+        data: user, // Service already serializes - no .toJSON() call
       });
     } catch (error: any) {
+      console.error("Error fetching user by ID:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Internal server error",
+      });
       return res.status(500).json({
         success: false,
         message: error.message || "Failed to get user",

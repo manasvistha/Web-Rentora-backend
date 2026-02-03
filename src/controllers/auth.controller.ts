@@ -61,11 +61,12 @@ export class AuthController {
       // 2. Perform login via service
       const result = await authService.login(validatedData);
       
-      console.log('✅ Login successful for user:', result.user._id);
+      console.log('✅ Login successful for user:', (result.user as any).id);
       console.log('📝 Token generated (first 20 chars):', result.token.substring(0, 20) + '...');
       
       // 3. Return response - Flutter looks for 'token' and 'data'
       // result should be { user: IUser, token: string }
+      // Note: authService.login already calls toJSON(), so result.user is already serialized
       return res.status(200).json({
         success: true,
         token: result.token, // Matching: response.data['token'] in Flutter login()
@@ -141,6 +142,13 @@ export class AuthController {
       // Update user's profilePicture in database
       const updatedUser = await authService.updateProfilePicture(userId, photoUrl);
 
+      if (!updatedUser) {
+        return res.status(404).json({
+          success: false,
+          message: "User not found"
+        });
+      }
+
       console.log('📸 Profile picture uploaded:', photoUrl);
 
       return res.status(200).json({
@@ -178,6 +186,13 @@ export class AuthController {
       }
 
       const user = await userService.createUser(userData);
+
+      if (!user) {
+        return res.status(400).json({
+          success: false,
+          message: "Failed to create user",
+        });
+      }
 
       return res.status(201).json({
         success: true,

@@ -3,14 +3,20 @@ import bcrypt from "bcryptjs";
 
 export class UserService {
   async createUser(data: any) {
-    if (data?.email) {
-      const existingUser = await UserModel.findOne({ email: data.email });
+    const payload = {
+      ...data,
+      email: data?.email ? data.email.trim().toLowerCase() : undefined,
+      username: data?.username ? data.username.trim().toLowerCase() : undefined,
+    };
+
+    if (payload?.email) {
+      const existingUser = await UserModel.findOne({ email: payload.email });
       if (existingUser) {
         throw new Error("User with this email already exists");
       }
     }
 
-    const user = await UserModel.create(data);
+    const user = await UserModel.create(payload);
     return user ? user.toJSON() : null;
   }
 
@@ -25,7 +31,14 @@ export class UserService {
   }
 
   async updateUserById(userId: string, data: any) {
-    const updateData = { ...data };
+    const updateData: any = { ...data };
+
+    if (updateData.email) {
+      updateData.email = updateData.email.trim().toLowerCase();
+    }
+    if (updateData.username) {
+      updateData.username = updateData.username.trim().toLowerCase();
+    }
 
     if (updateData.password) {
       const salt = await bcrypt.genSalt(10);

@@ -83,7 +83,17 @@ app.get('/', (req, res) => {
   res.status(200).json({ success: true, message: "Rentora API is live" });
 });
 
-// Static files for images
+// Static files for images with proper CORS headers
+// Add CORS headers for all static file responses
+app.use((req, res, next) => {
+  if (req.path.startsWith('/public')) {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type');
+  }
+  next();
+});
+
 app.use('/public', express.static(path.join(__dirname, '../public')));
 app.use('/public/profile-pictures', express.static(path.join(__dirname, '../uploads/profile-pictures')));
 
