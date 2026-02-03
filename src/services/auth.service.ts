@@ -3,7 +3,8 @@ import jwt from "jsonwebtoken";
 
 export class AuthService {
   async login(data: any) {
-    const { email, password } = data;
+    const email = (data?.email || "").trim().toLowerCase();
+    const password = data?.password;
 
     // 1. Find user by email
     const user = await UserModel.findOne({ email });
@@ -32,14 +33,20 @@ export class AuthService {
   }
 
   async register(data: any) {
+    const payload = {
+      ...data,
+      email: (data?.email || "").trim().toLowerCase(),
+      username: data?.username ? data.username.trim().toLowerCase() : undefined,
+    };
+
     // Check if user already exists
-    const existingUser = await UserModel.findOne({ email: data.email });
+    const existingUser = await UserModel.findOne({ email: payload.email });
     if (existingUser) {
       throw new Error("User with this email already exists");
     }
 
     // Create user (password is hashed automatically by our Model's pre-save hook)
-    const user = await UserModel.create(data);
+    const user = await UserModel.create(payload);
     return user;
   }
 

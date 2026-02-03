@@ -13,6 +13,7 @@ dotenv.config();
 import { connectDB } from './database/database.db';
 import { PORT, ALLOWED_ORIGINS } from './config/index.ts'; 
 import authRoutes from './routes/auth.route.ts';
+import adminUserRoutes from './routes/admin.user.route.ts';
 
 const app: Application = express();
 
@@ -75,13 +76,24 @@ app.use('/api/', limiter);
 
 // 7. ROUTES
 app.use('/api/auth', authRoutes);
+app.use('/api/admin', adminUserRoutes);
 
 // Health Check
 app.get('/', (req, res) => {
   res.status(200).json({ success: true, message: "Rentora API is live" });
 });
 
-// Static files for images
+// Static files for images with proper CORS headers
+// Add CORS headers for all static file responses
+app.use((req, res, next) => {
+  if (req.path.startsWith('/public')) {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type');
+  }
+  next();
+});
+
 app.use('/public', express.static(path.join(__dirname, '../public')));
 app.use('/public/profile-pictures', express.static(path.join(__dirname, '../uploads/profile-pictures')));
 
