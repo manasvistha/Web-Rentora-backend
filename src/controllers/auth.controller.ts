@@ -1,8 +1,10 @@
 import { Request, Response } from "express";
 import { AuthService } from "../services/auth.service";
+import { UserService } from "../services/user.service";
 import { registerDTO, loginDTO } from "../dtos/user.dto";
 
 const authService = new AuthService();
+const userService = new UserService();
 
 export class AuthController {
   // src/controllers/auth.controller.ts
@@ -155,6 +157,94 @@ export class AuthController {
       return res.status(500).json({
         success: false,
         message: error.message || "Failed to upload photo"
+      });
+    }
+  }
+
+  async createUser(req: Request, res: Response) {
+    try {
+      const file = (req as any).file;
+
+      const userData: any = {
+        name: req.body?.name,
+        email: req.body?.email,
+        password: req.body?.password,
+        username: req.body?.username || undefined,
+        role: req.body?.role || "user",
+      };
+
+      if (file) {
+        userData.profilePicture = `/public/profile-pictures/${file.filename}`;
+      }
+
+      const user = await userService.createUser(userData);
+
+      return res.status(201).json({
+        success: true,
+        message: "User created successfully",
+        data: user,
+      });
+    } catch (error: any) {
+      return res.status(400).json({
+        success: false,
+        message: error.message || "Failed to create user",
+      });
+    }
+  }
+
+  async updateUser(req: Request, res: Response) {
+    try {
+      const userId = req.params.id;
+      const requester = (req as any).user;
+
+      if (!requester || (requester.role !== "admin" && requester.id !== userId)) {
+        return res.status(403).json({
+          success: false,
+          message: "You are not allowed to update this user",
+        });
+      }
+
+      const file = (req as any).file;
+
+      const updateData: any = {
+        name: req.body?.name,
+        email: req.body?.email,
+        password: req.body?.password,
+        username: req.body?.username,
+      };
+
+      if (requester.role === "admin") {
+        updateData.role = req.body?.role;
+      }
+
+      if (file) {
+        updateData.profilePicture = `/public/profile-pictures/${file.filename}`;
+      }
+
+      Object.keys(updateData).forEach((key) => {
+        if (updateData[key] === undefined || updateData[key] === "") {
+          delete updateData[key];
+        }
+      });
+
+      const updatedUser = await userService.updateUserById(userId, updateData);
+
+      if (!updatedUser) {
+        return res.status(404).json({
+          success: false,
+          message: "User not found",
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: "User updated successfully",
+        data: updatedUser,
+      });
+    } catch (error: any) {
+      return res.status(400).json({
+        success: false,
+        message: error.message || "Failed to update user",
       });
     }
   }

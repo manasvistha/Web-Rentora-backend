@@ -13,6 +13,7 @@ dotenv.config();
 import { connectDB } from './database/database.db';
 import { PORT, ALLOWED_ORIGINS } from './config/index.ts'; 
 import authRoutes from './routes/auth.route.ts';
+import adminUserRoutes from './routes/admin.user.route.ts';
 
 const app: Application = express();
 
@@ -75,6 +76,7 @@ app.use('/api/', limiter);
 
 // 7. ROUTES
 app.use('/api/auth', authRoutes);
+app.use('/api/admin', adminUserRoutes);
 
 // Health Check
 app.get('/', (req, res) => {
