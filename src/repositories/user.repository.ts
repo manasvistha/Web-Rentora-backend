@@ -4,6 +4,7 @@ export interface IUserRepository {
   getUserByEmail(email: string): Promise<IUser | null>;
   getUserByUsername(username: string): Promise<IUser | null>;
   createUser(userData: Partial<IUser>): Promise<IUser>;
+  getUserById(id: string): Promise<IUser | null>;
 }
 
 export class UserRepository implements IUserRepository {
@@ -18,5 +19,9 @@ export class UserRepository implements IUserRepository {
 
   async getUserByUsername(username: string): Promise<IUser | null> {
     return await UserModel.findOne({ username });
+  }
+
+  async getUserById(id: string): Promise<IUser | null> {
+    return await UserModel.findById(id);
   }
 }
