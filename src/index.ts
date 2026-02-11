@@ -46,7 +46,9 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // 3. SECURITY & LOGGING
-app.use(helmet()); 
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+})); 
 app.use(morgan('dev')); 
 
 // 4. CORS CONFIGURATION
@@ -119,7 +121,7 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use('/public', express.static(path.join(__dirname, '../public')));
+// Serve uploaded files from the uploads directory
 app.use('/public/profile-pictures', express.static(path.join(__dirname, '../uploads/profile-pictures')));
 app.use('/public/property-images', express.static(path.join(__dirname, '../uploads/property-images')));
 
