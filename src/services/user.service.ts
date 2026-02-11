@@ -56,4 +56,12 @@ export class UserService {
     const user = await UserModel.findByIdAndDelete(userId).select("-password");
     return user ? user.toJSON() : null;
   }
+
+  async updateUserRole(userId: string, role: string) {
+    const user = await UserModel.findByIdAndUpdate(userId, { role }, {
+      new: true,
+    }).select("-password");
+
+    return user ? user.toJSON() : null;
+  }
 }

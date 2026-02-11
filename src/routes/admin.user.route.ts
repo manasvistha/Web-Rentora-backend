@@ -29,4 +29,12 @@ router.put(
 
 router.delete("/users/:id", authorize, requireAdmin, adminController.deleteUser);
 
+// Admin user promotion route
+router.post("/users/:id/promote", authorize, requireAdmin, adminController.promoteToAdmin);
+
+// Admin property management routes
+router.get("/properties", authorize, requireAdmin, adminController.getAllProperties);
+router.put("/properties/:id/status", authorize, requireAdmin, adminController.updatePropertyStatus);
+router.delete("/properties/:id", authorize, requireAdmin, adminController.deleteProperty);
+
 export default router;

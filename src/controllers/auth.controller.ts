@@ -30,7 +30,7 @@ export class AuthController {
       return res.status(201).json({ 
         success: true,
         message: "Registration successful", 
-        user: user.toJSON() // Make sure to call toJSON to exclude password
+        user: user // user object is already serialized without password
       });
     } catch (error: any) {
       console.error("Registration Error Details:", error.message); 
@@ -182,7 +182,7 @@ export class AuthController {
       };
 
       if (file) {
-        userData.profilePicture = `/public/profile-pictures/${file.filename}`;
+        userData.profilePicture = file.filename;
       }
 
       const user = await userService.createUser(userData);
@@ -233,7 +233,7 @@ export class AuthController {
       }
 
       if (file) {
-        updateData.profilePicture = `/public/profile-pictures/${file.filename}`;
+        updateData.profilePicture = file.filename;
       }
 
       Object.keys(updateData).forEach((key) => {
