@@ -12,11 +12,35 @@ export class PropertyService {
   }
 
   async getAllProperties() {
-    return await this.propertyRepository.findAll();
+    const properties = await this.propertyRepository.findAll();
+    const baseUrl = (process.env.BASE_URL || 'http://localhost:5000').replace(/\/$/, '');
+
+    const makeFullUrl = (image: string) => {
+      if (!image) return image;
+      // If already absolute URL, return as is
+      if (/^https?:\/\//i.test(image)) return image;
+      // Ensure single slash between base and path
+      return `${baseUrl}${image.startsWith('/') ? '' : '/'}${image}`;
+    };
+
+    return properties.map((property) => {
+      property.images = property.images.map((image) => makeFullUrl(image));
+      return property;
+    });
   }
 
   async getPropertyById(id: string) {
-    return await this.propertyRepository.findById(id);
+    const property = await this.propertyRepository.findById(id);
+    if (property) {
+      const baseUrl = (process.env.BASE_URL || 'http://localhost:5000').replace(/\/$/, '');
+      const makeFullUrl = (image: string) => {
+        if (!image) return image;
+        if (/^https?:\/\//i.test(image)) return image;
+        return `${baseUrl}${image.startsWith('/') ? '' : '/'}${image}`;
+      };
+      property.images = property.images.map((image) => makeFullUrl(image));
+    }
+    return property;
   }
 
   async getPropertiesByOwner(ownerId: string) {

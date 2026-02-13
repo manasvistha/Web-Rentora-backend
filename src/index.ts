@@ -135,10 +135,17 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   });
 });
 
-// 9. SERVER START
+// 9. EXPORT APP & OPTIONAL SERVER START
 const port = PORT || 5000;
-app.listen(Number(port), "0.0.0.0", () => {
-  console.log(`\n✅ Rentora Server Started`);
-  console.log(`📡 Port: ${port}`);
-  console.log(`📱 For Flutter connection, use your machine's IP address.`);
-});
+
+// Export the Express app for testing
+export default app;
+
+// Start server only when running index.ts directly
+if (require.main === module) {
+  app.listen(Number(port), "0.0.0.0", () => {
+    console.log(`\n✅ Rentora Server Started`);
+    console.log(`📡 Port: ${port}`);
+    console.log(`📱 For Flutter connection, use your machine's IP address.`);
+  });
+}

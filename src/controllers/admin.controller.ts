@@ -180,6 +180,8 @@ export class AdminController {
   async getAllProperties(req: Request, res: Response) {
     try {
       const properties = await propertyService.getAllProperties();
+      // Debug: log images arrays returned for frontend troubleshooting
+      console.log('Admin getAllProperties - images preview:', properties.map(p => ({ id: p._id, images: p.images.slice(0,5) })));
       return res.status(200).json({
         success: true,
         data: properties,

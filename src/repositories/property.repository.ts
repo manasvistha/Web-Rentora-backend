@@ -8,6 +8,7 @@ export class PropertyRepository {
   }
 
   async findAll(): Promise<IProperty[]> {
+    // Return raw property documents; URL normalization is handled in the service layer
     return await Property.find().populate('owner', 'name email').sort({ createdAt: -1 });
   }
 
