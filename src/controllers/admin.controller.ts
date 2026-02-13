@@ -55,10 +55,19 @@ export class AdminController {
 
   async getUsers(req: Request, res: Response) {
     try {
-      const users = await userService.getAllUsers();
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 10;
+
+      const result = await userService.getAllUsers(page, limit);
       return res.status(200).json({
         success: true,
-        data: users,
+        data: result.users,
+        pagination: {
+          total: result.total,
+          page: result.page,
+          limit: result.limit,
+          totalPages: result.totalPages
+        }
       });
     } catch (error: any) {
       return res.status(500).json({
