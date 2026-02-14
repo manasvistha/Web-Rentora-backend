@@ -30,7 +30,7 @@ export class AuthController {
       return res.status(201).json({ 
         success: true,
         message: "Registration successful", 
-        user: user.toJSON() // Make sure to call toJSON to exclude password
+        user: user // user object is already serialized without password
       });
     } catch (error: any) {
       console.error("Registration Error Details:", error.message); 
@@ -182,7 +182,7 @@ export class AuthController {
       };
 
       if (file) {
-        userData.profilePicture = `/public/profile-pictures/${file.filename}`;
+        userData.profilePicture = file.filename;
       }
 
       const user = await userService.createUser(userData);
@@ -233,7 +233,7 @@ export class AuthController {
       }
 
       if (file) {
-        updateData.profilePicture = `/public/profile-pictures/${file.filename}`;
+        updateData.profilePicture = file.filename;
       }
 
       Object.keys(updateData).forEach((key) => {
@@ -263,4 +263,36 @@ export class AuthController {
       });
     }
   }
+
+  async sendResetPasswordEmail(req: Request, res: Response) {
+        try {
+            const email = req.body.email;
+            const user = await authService.sendResetPasswordEmail(email);
+            return res.status(200).json(
+                { success: true,
+                    data: user,
+                    message: "If the email is registered, a reset link has been sent." }
+            );
+        } catch (error: Error | any) {
+            return res.status(error.statusCode ?? 500).json(
+                { success: false, message: error.message || "Internal Server Error" }
+            );
+        }
+    }
+
+    async resetPassword(req: Request, res: Response) {
+        try {
+
+           const token = req.params.token;
+            const { newPassword } = req.body;
+            await authService.resetPassword(token, newPassword);
+            return res.status(200).json(
+                { success: true, message: "Password has been reset successfully." }
+            );
+        } catch (error: Error | any) {
+            return res.status(error.statusCode ?? 500).json(
+                { success: false, message: error.message || "Internal Server Error" }
+            );
+        }
+    }
 }

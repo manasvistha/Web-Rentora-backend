@@ -4,6 +4,7 @@ import { authorize } from "../middlewears/authorized.middlewears.ts";
 import { requireAdmin } from "../middlewears/admin.middlewears.ts";
 import { uploadProfilePicture } from "../middlewears/uploadProfilePicture.middlewears.ts";
 
+
 const router = Router();
 const authController = new AuthController();
 
@@ -17,5 +18,7 @@ router.get("/current-user", authorize, authController.getProfile); // Alias for 
 router.post("/upload-photo", authorize, uploadProfilePicture.single('photo'), authController.uploadPhoto);
 router.post("/user", authorize, requireAdmin, uploadProfilePicture.single('photo'), authController.createUser);
 router.put("/:id", authorize, uploadProfilePicture.single('photo'), authController.updateUser);
+router.post("/request-password-reset", authController.sendResetPasswordEmail);
+router.post("/reset-password/:token", authController.resetPassword);
 
 export default router;

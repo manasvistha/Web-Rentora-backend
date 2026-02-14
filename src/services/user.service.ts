@@ -20,9 +20,17 @@ export class UserService {
     return user ? user.toJSON() : null;
   }
 
-  async getAllUsers() {
-    const users = await UserModel.find().select("-password");
-    return users.map((user) => (user.toJSON ? user.toJSON() : user));
+  async getAllUsers(page: number = 1, limit: number = 10) {
+    const skip = (page - 1) * limit;
+    const users = await UserModel.find().select("-password").skip(skip).limit(limit);
+    const total = await UserModel.countDocuments();
+    return {
+      users: users.map((user) => (user.toJSON ? user.toJSON() : user)),
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit)
+    };
   }
 
   async getUserById(userId: string) {
@@ -54,6 +62,14 @@ export class UserService {
 
   async deleteUserById(userId: string) {
     const user = await UserModel.findByIdAndDelete(userId).select("-password");
+    return user ? user.toJSON() : null;
+  }
+
+  async updateUserRole(userId: string, role: string) {
+    const user = await UserModel.findByIdAndUpdate(userId, { role }, {
+      new: true,
+    }).select("-password");
+
     return user ? user.toJSON() : null;
   }
 }

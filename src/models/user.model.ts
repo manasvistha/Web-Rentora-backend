@@ -37,8 +37,7 @@ const UserSchema: Schema = new Schema<IUser>(
       unique: true, 
       sparse: true, 
       trim: true,
-      lowercase: true,
-      default: null 
+      lowercase: true
     },
     profilePicture: {
       type: String

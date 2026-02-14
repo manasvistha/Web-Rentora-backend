@@ -9,11 +9,32 @@ import dotenv from 'dotenv';
 // Load environment variables
 dotenv.config();
 
+// Import models to register them
+import './models/user.model';
+import './models/property.model';
+import './models/conversation.model';
+import './models/notification.model';
+import './models/booking.model';
+
+// Create upload directories if they don't exist
+import fs from 'fs';
+const uploadDirs = ['uploads/profile-pictures', 'uploads/property-images'];
+uploadDirs.forEach(dir => {
+  const fullPath = path.join(process.cwd(), dir);
+  if (!fs.existsSync(fullPath)) {
+    fs.mkdirSync(fullPath, { recursive: true });
+  }
+});
+
 // If your file is src/database/database.db.ts
 import { connectDB } from './database/database.db';
 import { PORT, ALLOWED_ORIGINS } from './config/index.ts'; 
 import authRoutes from './routes/auth.route.ts';
 import adminUserRoutes from './routes/admin.user.route.ts';
+import propertyRoutes from './routes/property.route.ts';
+import bookingRoutes from './routes/booking.route.ts';
+import conversationRoutes from './routes/conversation.route.ts';
+import notificationRoutes from './routes/notification.route.ts';
 
 const app: Application = express();
 
@@ -25,7 +46,9 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // 3. SECURITY & LOGGING
-app.use(helmet()); 
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+})); 
 app.use(morgan('dev')); 
 
 // 4. CORS CONFIGURATION
@@ -77,6 +100,10 @@ app.use('/api/', limiter);
 // 7. ROUTES
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminUserRoutes);
+app.use('/api/property', propertyRoutes);
+app.use('/api/booking', bookingRoutes);
+app.use('/api/conversation', conversationRoutes);
+app.use('/api/notification', notificationRoutes);
 
 // Health Check
 app.get('/', (req, res) => {
@@ -94,8 +121,9 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use('/public', express.static(path.join(__dirname, '../public')));
+// Serve uploaded files from the uploads directory
 app.use('/public/profile-pictures', express.static(path.join(__dirname, '../uploads/profile-pictures')));
+app.use('/public/property-images', express.static(path.join(__dirname, '../uploads/property-images')));
 
 // 8. ERROR HANDLER
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {

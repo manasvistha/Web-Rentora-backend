@@ -1,7 +1,9 @@
 import { Request, Response } from "express";
 import { UserService } from "../services/user.service";
+import { PropertyService } from "../services/property.service";
 
 const userService = new UserService();
+const propertyService = new PropertyService();
 
 export class AdminController {
   async createUser(req: Request, res: Response) {
@@ -53,10 +55,19 @@ export class AdminController {
 
   async getUsers(req: Request, res: Response) {
     try {
-      const users = await userService.getAllUsers();
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 10;
+
+      const result = await userService.getAllUsers(page, limit);
       return res.status(200).json({
         success: true,
-        data: users,
+        data: result.users,
+        pagination: {
+          total: result.total,
+          page: result.page,
+          limit: result.limit,
+          totalPages: result.totalPages
+        }
       });
     } catch (error: any) {
       return res.status(500).json({
@@ -161,6 +172,105 @@ export class AdminController {
       return res.status(500).json({
         success: false,
         message: error.message || "Failed to delete user",
+      });
+    }
+  }
+
+  // Property management methods for admin
+  async getAllProperties(req: Request, res: Response) {
+    try {
+      const properties = await propertyService.getAllProperties();
+      return res.status(200).json({
+        success: true,
+        data: properties,
+      });
+    } catch (error: any) {
+      console.error("Admin get properties error:", error.message);
+      return res.status(500).json({
+        success: false,
+        message: error.message || "Failed to get properties",
+      });
+    }
+  }
+
+  async promoteToAdmin(req: Request, res: Response) {
+    try {
+      const userId = req.params.id;
+
+      if (!userId) {
+        return res.status(400).json({
+          success: false,
+          message: "User ID is required",
+        });
+      }
+
+      // Update user role to admin
+      const updatedUser = await userService.updateUserRole(userId, 'admin');
+
+      if (!updatedUser) {
+        return res.status(404).json({
+          success: false,
+          message: "User not found",
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: "User promoted to admin successfully",
+        data: updatedUser,
+      });
+    } catch (error: any) {
+      console.error("Admin promote to admin error:", error.message);
+      return res.status(500).json({
+        success: false,
+        message: error.message || "Failed to promote user to admin",
+      });
+    }
+  }
+
+  async updatePropertyStatus(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const { status } = req.body;
+      const adminId = (req as any).user.id;
+
+      if (!['available', 'assigned', 'booked'].includes(status)) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid status. Must be 'available', 'assigned', or 'booked'",
+        });
+      }
+
+      const property = await propertyService.updatePropertyStatus(id, status, adminId);
+      return res.status(200).json({
+        success: true,
+        message: "Property status updated successfully",
+        data: property,
+      });
+    } catch (error: any) {
+      console.error("Admin update property status error:", error.message);
+      return res.status(500).json({
+        success: false,
+        message: error.message || "Failed to update property status",
+      });
+    }
+  }
+
+  async deleteProperty(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const adminId = (req as any).user.id;
+
+      await propertyService.deleteProperty(id, adminId);
+      return res.status(200).json({
+        success: true,
+        message: "Property deleted successfully",
+      });
+    } catch (error: any) {
+      console.error("Admin delete property error:", error.message);
+      return res.status(500).json({
+        success: false,
+        message: error.message || "Failed to delete property",
       });
     }
   }

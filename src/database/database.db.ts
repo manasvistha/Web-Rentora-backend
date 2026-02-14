@@ -10,7 +10,8 @@ export async function connectDB() {
     console.log("✅ MongoDB Connected (Rentora)");
   } catch (error) {
     console.error("❌ MongoDB Connection Error:", error);
-    // Exit process with failure
-    process.exit(1);
+    console.log("⚠️  Continuing without database connection for development...");
+    // Don't exit process, continue running
+    // process.exit(1);
   }
 }
