@@ -82,13 +82,13 @@ export class PropertyController {
     }
   }
 
-  async searchByLocation(req: Request, res: Response) {
+  async searchByQuery(req: Request, res: Response) {
     try {
-      const { location } = req.query;
-      if (!location || typeof location !== 'string') {
-        return res.status(400).json({ error: "Location query required" });
+      const { query } = req.query;
+      if (!query || typeof query !== 'string') {
+        return res.status(400).json({ error: "Query required" });
       }
-      const properties = await this.propertyService.searchByLocation(location);
+      const properties = await this.propertyService.searchByQuery(query);
       res.json(properties);
     } catch (error: any) {
       res.status(500).json({ error: error.message });

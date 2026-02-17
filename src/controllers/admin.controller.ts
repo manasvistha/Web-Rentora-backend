@@ -230,16 +230,54 @@ export class AdminController {
     }
   }
 
+  async approveProperty(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const adminId = (req as any).user.id;
+      const property = await propertyService.updatePropertyStatus(id, 'approved', adminId);
+      return res.status(200).json({
+        success: true,
+        message: "Property approved successfully",
+        data: property,
+      });
+    } catch (error: any) {
+      console.error("Admin approve property error:", error.message);
+      return res.status(500).json({
+        success: false,
+        message: error.message || "Failed to approve property",
+      });
+    }
+  }
+
+  async rejectProperty(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const adminId = (req as any).user.id;
+      const property = await propertyService.updatePropertyStatus(id, 'rejected', adminId);
+      return res.status(200).json({
+        success: true,
+        message: "Property rejected successfully",
+        data: property,
+      });
+    } catch (error: any) {
+      console.error("Admin reject property error:", error.message);
+      return res.status(500).json({
+        success: false,
+        message: error.message || "Failed to reject property",
+      });
+    }
+  }
+
   async updatePropertyStatus(req: Request, res: Response) {
     try {
       const { id } = req.params;
       const { status } = req.body;
       const adminId = (req as any).user.id;
 
-      if (!['available', 'assigned', 'booked'].includes(status)) {
+      if (!['pending', 'approved', 'rejected', 'available', 'assigned', 'booked'].includes(status)) {
         return res.status(400).json({
           success: false,
-          message: "Invalid status. Must be 'available', 'assigned', or 'booked'",
+          message: "Invalid status. Must be one of: 'pending', 'approved', 'rejected', 'available', 'assigned', 'booked'",
         });
       }
 
@@ -263,7 +301,8 @@ export class AdminController {
       const { id } = req.params;
       const adminId = (req as any).user.id;
 
-      await propertyService.deleteProperty(id, adminId);
+      // Admins are allowed to delete any property
+      await propertyService.deletePropertyByAdmin(id);
       return res.status(200).json({
         success: true,
         message: "Property deleted successfully",

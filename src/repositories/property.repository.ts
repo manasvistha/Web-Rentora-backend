@@ -20,8 +20,13 @@ export class PropertyRepository {
     return await Property.find({ owner: ownerId }).sort({ createdAt: -1 });
   }
 
-  async findByLocation(location: string): Promise<IProperty[]> {
-    return await Property.find({ location: { $regex: location, $options: 'i' } }).populate('owner', 'name email');
+  async findByQuery(query: string): Promise<IProperty[]> {
+    return await Property.find({
+      $or: [
+        { location: { $regex: query, $options: 'i' } },
+        { title: { $regex: query, $options: 'i' } }
+      ]
+    }).populate('owner', 'name email');
   }
 
   async update(id: string, data: UpdatePropertyDto): Promise<IProperty | null> {
@@ -41,7 +46,7 @@ export class PropertyRepository {
     ).populate('owner', 'name email').populate('assignedTo', 'name email');
   }
 
-  async updateStatus(propertyId: string, status: 'available' | 'assigned' | 'booked'): Promise<IProperty | null> {
+  async updateStatus(propertyId: string, status: 'pending' | 'approved' | 'rejected' | 'available' | 'assigned' | 'booked'): Promise<IProperty | null> {
     return await Property.findByIdAndUpdate(propertyId, { status }, { new: true });
   }
 }

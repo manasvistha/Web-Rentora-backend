@@ -41,13 +41,18 @@ router.post("/", authorize, upload.array('images', 10), (req, res, next) => {
 });
 router.get("/", propertyController.getAllProperties.bind(propertyController));
 router.get("/my", authorize, propertyController.getMyProperties.bind(propertyController));
-router.get("/search", propertyController.searchByLocation.bind(propertyController));
+router.get("/search", propertyController.searchByQuery.bind(propertyController));
 router.get("/:id", propertyController.getPropertyById.bind(propertyController));
 router.put("/:id", authorize, propertyController.updateProperty.bind(propertyController));
 router.delete("/:id", authorize, propertyController.deleteProperty.bind(propertyController));
 
 // Admin routes
+import { AdminController } from "../controllers/admin.controller";
+const adminController = new AdminController();
 router.put("/:id/assign", authorize, propertyController.assignProperty.bind(propertyController));
-router.put("/:id/status", authorize, propertyController.updatePropertyStatus.bind(propertyController));
+// Moderation endpoints
+router.put("/admin/:id/approve", authorize, adminController.approveProperty.bind(adminController));
+router.put("/admin/:id/reject", authorize, adminController.rejectProperty.bind(adminController));
+router.put("/admin/:id/status", authorize, adminController.updatePropertyStatus.bind(adminController));
 
 export default router;

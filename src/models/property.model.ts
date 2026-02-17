@@ -12,7 +12,7 @@ export interface IProperty extends Document {
   }[];
   images: string[]; // URLs or paths
   owner: mongoose.Types.ObjectId; // reference to User
-  status: 'available' | 'assigned' | 'booked';
+  status: 'pending' | 'approved' | 'rejected' | 'available' | 'assigned' | 'booked';
   assignedTo?: mongoose.Types.ObjectId; // user who rented it
   createdAt: Date;
   updatedAt: Date;
@@ -54,8 +54,8 @@ const PropertySchema: Schema = new Schema<IProperty>(
     },
     status: {
       type: String,
-      enum: ['available', 'assigned', 'booked'],
-      default: 'available'
+      enum: ['pending', 'approved', 'rejected', 'available', 'assigned', 'booked'],
+      default: 'pending'
     },
     assignedTo: {
       type: Schema.Types.ObjectId,

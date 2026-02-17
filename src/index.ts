@@ -89,11 +89,12 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   next();
 });
 
-// 6. RATE LIMITER
+// 6. RATE LIMITER (higher limit for development)
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, 
-  max: 100, 
-  message: { success: false, message: "Too many requests, please try again later." }
+  max: 1000,  // Increased from 100 for development
+  message: { success: false, message: "Too many requests, please try again later." },
+  skip: (req) => process.env.NODE_ENV === 'development' // Skip in dev mode
 });
 app.use('/api/', limiter);
 

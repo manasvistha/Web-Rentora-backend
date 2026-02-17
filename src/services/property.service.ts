@@ -8,6 +8,25 @@ export class PropertyService {
 
   async createProperty(data: CreatePropertyDto, ownerId: string) {
     const property = await this.propertyRepository.create({ ...data, owner: ownerId });
+
+    // Notify all users about the new property
+    try {
+      const { UserModel } = await import("../models/user.model");
+      const users = await UserModel.find().select("_id name");
+      if (users && users.length) {
+        const message = `New property listed: ${property.title}`;
+        const relatedId = property._id?.toString();
+        // Fire-and-forget notifications; don't let failures block property creation
+        await Promise.allSettled(
+          users.map((u: any) =>
+            this.notificationService.createNotification(u._id.toString(), message, "general", relatedId)
+          )
+        );
+      }
+    } catch (err: any) {
+      console.error("Failed to create notifications for new property:", err?.message || err);
+    }
+
     return property;
   }
 
@@ -47,8 +66,8 @@ export class PropertyService {
     return await this.propertyRepository.findByOwner(ownerId);
   }
 
-  async searchByLocation(location: string) {
-    return await this.propertyRepository.findByLocation(location);
+  async searchByQuery(query: string) {
+    return await this.propertyRepository.findByQuery(query);
   }
 
   async updateProperty(id: string, data: UpdatePropertyDto, ownerId: string) {
@@ -64,6 +83,13 @@ export class PropertyService {
     if (!property) throw new Error("Property not found");
     if (property.owner.toString() !== ownerId) throw new Error("Unauthorized");
 
+    return await this.propertyRepository.delete(id);
+  }
+
+  // Allow admins to delete properties without owner checks
+  async deletePropertyByAdmin(id: string) {
+    const property = await this.propertyRepository.findById(id);
+    if (!property) throw new Error("Property not found");
     return await this.propertyRepository.delete(id);
   }
 
@@ -87,15 +113,24 @@ export class PropertyService {
     return property;
   }
 
-  async updatePropertyStatus(propertyId: string, status: 'available' | 'assigned' | 'booked', adminId: string) {
+  async updatePropertyStatus(propertyId: string, status: 'pending' | 'approved' | 'rejected' | 'available' | 'assigned' | 'booked', adminId: string) {
     const property = await this.propertyRepository.updateStatus(propertyId, status);
     if (property) {
-      await this.notificationService.createNotification(
-        property.owner.toString(),
-        `Status of your property "${property.title}" updated to ${status}.`,
-        'status_update',
-        propertyId
-      );
+      if (status === 'rejected') {
+        await this.notificationService.createNotification(
+          property.owner.toString(),
+          `Your property "${property.title}" was rejected by the admin. Please review and update your listing.`,
+          'status_update',
+          propertyId
+        );
+      } else {
+        await this.notificationService.createNotification(
+          property.owner.toString(),
+          `Status of your property "${property.title}" updated to ${status}.`,
+          'status_update',
+          propertyId
+        );
+      }
       if (property.assignedTo) {
         await this.notificationService.createNotification(
           property.assignedTo.toString(),

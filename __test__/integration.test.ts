@@ -3,9 +3,6 @@ import app from '../src/index';
 import mongoose from 'mongoose';
 import { beforeAll, afterAll, describe, test, expect } from '@jest/globals';
 
-// Basic integration tests for Rentora backend API
-// These tests assume a running MongoDB and properly configured .env in the backend folder.
-
 beforeAll(async () => {
   // Connect to test DB if provided
   const uri = process.env.MONGO_URI || process.env.LOCAL_DB_URI;
@@ -126,6 +123,31 @@ describe('Rentora API integration tests (admin & property)', () => {
     } else {
       expect([401,403,500]).toContain(res.status);
     }
+  });
+
+  test('Protected auth profile without auth returns 401/403', async () => {
+    const res = await request(app).get('/api/auth/profile');
+    expect([401, 403]).toContain(res.status);
+  });
+
+  test('Create booking without auth returns 401/400', async () => {
+    const res = await request(app).post('/api/booking').send({});
+    expect([401, 400]).toContain(res.status);
+  });
+
+  test('Get bookings by property without auth returns 401/403/404', async () => {
+    const res = await request(app).get('/api/booking/property/000000000000000000000000');
+    expect([401, 403, 404]).toContain(res.status);
+  });
+
+  test('Mark notification as read without auth returns 401/403/404', async () => {
+    const res = await request(app).put('/api/notification/000/read');
+    expect([401, 403, 404]).toContain(res.status);
+  });
+
+  test('Send conversation message without auth returns 401/403/400', async () => {
+    const res = await request(app).post('/api/conversation/000/message').send({ text: 'hello' });
+    expect([401, 403, 400]).toContain(res.status);
   });
 
 });

@@ -12,8 +12,8 @@ export class NotificationService {
     });
   }
 
-  async getNotificationsByUser(userId: string) {
-    return await this.notificationRepository.findByUser(userId);
+  async getNotificationsByUser(userId: string, page: number = 1, limit: number = 20) {
+    return await this.notificationRepository.findByUser(userId, page, limit);
   }
 
   async markAsRead(notificationId: string, userId: string) {
