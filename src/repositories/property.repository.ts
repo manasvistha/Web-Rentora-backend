@@ -17,7 +17,7 @@ export class PropertyRepository {
   }
 
   async findByOwner(ownerId: string): Promise<IProperty[]> {
-    return await Property.find({ owner: ownerId }).sort({ createdAt: -1 });
+    return await Property.find({ owner: ownerId }).populate('owner', 'name email').sort({ createdAt: -1 });
   }
 
   async findByQuery(query: string): Promise<IProperty[]> {

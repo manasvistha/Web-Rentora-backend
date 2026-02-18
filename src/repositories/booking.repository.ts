@@ -26,4 +26,19 @@ export class BookingRepository {
   async findById(id: string): Promise<IBooking | null> {
     return await Booking.findById(id).populate('user', 'name email').populate('property', 'title location price');
   }
+
+  async findExistingByPropertyAndUser(propertyId: string, userId: string): Promise<IBooking | null> {
+    return await Booking.findOne({ property: propertyId, user: userId });
+  }
+
+  async rejectAllOthersForProperty(propertyId: string, approvedUserId: string): Promise<void> {
+    await Booking.updateMany(
+      {
+        property: propertyId,
+        user: { $ne: approvedUserId },
+        status: { $in: ['pending', 'approved'] }
+      },
+      { $set: { status: 'rejected' } }
+    );
+  }
 }

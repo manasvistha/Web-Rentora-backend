@@ -36,5 +36,10 @@ const BookingSchema: Schema = new Schema<IBooking>(
 
 // Index for property bookings
 BookingSchema.index({ property: 1, status: 1 });
+BookingSchema.index({ property: 1, user: 1 }, { unique: true });
+BookingSchema.index(
+  { property: 1 },
+  { unique: true, partialFilterExpression: { status: 'approved' } }
+);
 
 export default mongoose.model<IBooking>('Booking', BookingSchema);
