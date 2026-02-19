@@ -37,16 +37,31 @@ export class BookingController {
     }
   }
 
+  async getOwnerBookingRequests(req: Request, res: Response) {
+    try {
+      const ownerId = (req as any).user.id;
+      const bookings = await this.bookingService.getOwnerBookingRequests(ownerId);
+      res.json(bookings);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  }
+
   async updateBookingStatus(req: Request, res: Response) {
     try {
       const { id } = req.params;
       const { status } = req.body;
-      const adminId = (req as any).user.id;
-      if ((req as any).user.role !== 'admin') return res.status(403).json({ error: "Admin required" });
-      const booking = await this.bookingService.updateBookingStatus(id, status, adminId);
+      const ownerId = (req as any).user.id;
+      if (!['approved', 'rejected'].includes(status)) {
+        return res.status(400).json({ error: "Status must be 'approved' or 'rejected'" });
+      }
+      const booking = await this.bookingService.updateBookingStatus(id, status, ownerId);
       if (!booking) return res.status(404).json({ error: "Booking not found" });
       res.json(booking);
     } catch (error: any) {
+      if (error.message === "Unauthorized") {
+        return res.status(403).json({ error: error.message });
+      }
       res.status(400).json({ error: error.message });
     }
   }

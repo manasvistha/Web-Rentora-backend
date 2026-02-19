@@ -7,9 +7,10 @@ const bookingController = new BookingController();
 
 router.post("/", authorize, bookingController.createBooking.bind(bookingController));
 router.get("/my", authorize, bookingController.getMyBookings.bind(bookingController));
+router.get("/owner/requests", authorize, bookingController.getOwnerBookingRequests.bind(bookingController));
 router.get("/property/:propertyId", authorize, bookingController.getBookingsByProperty.bind(bookingController));
 
-// Admin route
+// Owner accepts/rejects request
 router.put("/:id/status", authorize, bookingController.updateBookingStatus.bind(bookingController));
 
 export default router;

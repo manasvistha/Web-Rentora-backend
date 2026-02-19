@@ -1,9 +1,11 @@
 import { Request, Response } from "express";
 import { UserService } from "../services/user.service";
 import { PropertyService } from "../services/property.service";
+import { BookingService } from "../services/booking.service";
 
 const userService = new UserService();
 const propertyService = new PropertyService();
+const bookingService = new BookingService();
 
 export class AdminController {
   async createUser(req: Request, res: Response) {
@@ -312,6 +314,21 @@ export class AdminController {
       return res.status(500).json({
         success: false,
         message: error.message || "Failed to delete property",
+      });
+    }
+  }
+
+  async getAllBookings(req: Request, res: Response) {
+    try {
+      const bookings = await bookingService.getAllBookingsForAdmin();
+      return res.status(200).json({
+        success: true,
+        data: bookings,
+      });
+    } catch (error: any) {
+      return res.status(500).json({
+        success: false,
+        message: error.message || "Failed to fetch bookings",
       });
     }
   }

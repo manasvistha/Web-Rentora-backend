@@ -2,21 +2,44 @@ import Booking, { IBooking } from "../models/booking.model";
 import { CreateBookingDto } from "../dtos/booking.dto";
 
 export class BookingRepository {
-  async create(data: CreateBookingDto & { user: string }): Promise<IBooking> {
+  async create(data: CreateBookingDto & { user: string; owner: string }): Promise<IBooking> {
     const booking = new Booking({
       property: data.propertyId,
       user: data.user,
+      owner: data.owner,
       message: data.message
     });
     return await booking.save();
   }
 
   async findByProperty(propertyId: string): Promise<IBooking[]> {
-    return await Booking.find({ property: propertyId }).populate('user', 'name email').sort({ createdAt: -1 });
+    return await Booking.find({ property: propertyId })
+      .populate('user', 'name email')
+      .populate('owner', 'name email')
+      .populate('property', 'title location price status')
+      .sort({ createdAt: -1 });
   }
 
   async findByUser(userId: string): Promise<IBooking[]> {
-    return await Booking.find({ user: userId }).populate('property', 'title location price').sort({ createdAt: -1 });
+    return await Booking.find({ user: userId })
+      .populate('property', 'title location price status')
+      .populate('owner', 'name email')
+      .sort({ createdAt: -1 });
+  }
+
+  async findByOwner(ownerId: string): Promise<IBooking[]> {
+    return await Booking.find({ owner: ownerId })
+      .populate('user', 'name email')
+      .populate('property', 'title location price status')
+      .sort({ createdAt: -1 });
+  }
+
+  async findAll(): Promise<IBooking[]> {
+    return await Booking.find({})
+      .populate('user', 'name email')
+      .populate('owner', 'name email')
+      .populate('property', 'title location price status')
+      .sort({ createdAt: -1 });
   }
 
   async updateStatus(bookingId: string, status: 'pending' | 'approved' | 'rejected'): Promise<IBooking | null> {
@@ -24,11 +47,18 @@ export class BookingRepository {
   }
 
   async findById(id: string): Promise<IBooking | null> {
-    return await Booking.findById(id).populate('user', 'name email').populate('property', 'title location price');
+    return await Booking.findById(id)
+      .populate('user', 'name email')
+      .populate('owner', 'name email')
+      .populate('property', 'title location price status owner');
   }
 
   async findExistingByPropertyAndUser(propertyId: string, userId: string): Promise<IBooking | null> {
     return await Booking.findOne({ property: propertyId, user: userId });
+  }
+
+  async findApprovedByProperty(propertyId: string): Promise<IBooking | null> {
+    return await Booking.findOne({ property: propertyId, status: 'approved' });
   }
 
   async rejectAllOthersForProperty(propertyId: string, approvedUserId: string): Promise<void> {

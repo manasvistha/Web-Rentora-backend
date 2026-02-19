@@ -27,7 +27,14 @@ export class PropertyController {
         floor: req.body.floor ? parseInt(req.body.floor) : undefined,
         parking: req.body.parking === 'true' || req.body.parking === true,
         petPolicy: req.body.petPolicy || undefined,
-        amenities: req.body.amenities ? (Array.isArray(req.body.amenities) ? req.body.amenities : [req.body.amenities]) : undefined,
+        amenities: req.body.amenities
+          ? (Array.isArray(req.body.amenities)
+              ? req.body.amenities
+              : String(req.body.amenities)
+                  .split(',')
+                  .map((s: string) => s.trim())
+                  .filter((s: string) => s.length > 0))
+          : undefined,
         availability: req.body.availability ? JSON.parse(req.body.availability) : [],
         images: req.files ? (req.files as Express.Multer.File[]).map(file => file.filename) : []
       };

@@ -3,7 +3,6 @@ import { PropertyService } from "./property.service";
 import { NotificationService } from "./notification.service";
 import { CreateBookingDto } from "../dtos/booking.dto";
 import Property from "../models/property.model";
-import Booking from "../models/booking.model";
 
 export class BookingService {
   private bookingRepository = new BookingRepository();
@@ -25,58 +24,31 @@ export class BookingService {
       throw new Error("You cannot book your own property");
     }
 
-    if (property.status === 'booked' || property.status === 'assigned') {
-      throw new Error("Property is already booked");
+    if (property.status !== 'available' && property.status !== 'approved') {
+      throw new Error("Property is not available for booking requests");
     }
 
-    const existing = await Booking.findOne({ property: data.propertyId, user: userId });
+    const alreadyApproved = await this.bookingRepository.findApprovedByProperty(data.propertyId);
+    if (alreadyApproved) {
+      throw new Error("Property is already rented");
+    }
+
+    const existing = await this.bookingRepository.findExistingByPropertyAndUser(data.propertyId, userId);
     if (existing) {
       throw new Error("You have already booked this property");
-    }
-
-    const reservedProperty = await Property.findOneAndUpdate(
-      {
-        _id: data.propertyId,
-        status: { $in: ['available', 'approved'] },
-        $or: [
-          { assignedTo: { $exists: false } },
-          { assignedTo: null }
-        ]
-      },
-      {
-        $set: {
-          assignedTo: userId,
-          status: 'booked'
-        }
-      },
-      { new: true }
-    );
-
-    if (!reservedProperty) {
-      throw new Error("Property is already booked by another user");
     }
 
     const booking = await this.bookingRepository.create({
       ...data,
       user: userId,
+      owner: property.owner.toString(),
     });
-
-    await Booking.findByIdAndUpdate(booking._id, { status: 'approved' }, { new: true });
-
-    await Booking.updateMany(
-      {
-        property: data.propertyId,
-        user: { $ne: userId },
-        status: { $in: ['pending', 'approved'] }
-      },
-      { $set: { status: 'rejected' } }
-    );
 
     const propertyOwnerId = property.owner.toString();
     if (propertyOwnerId) {
       await this.notificationService.createNotification(
         propertyOwnerId,
-        `Your property "${property.title}" has been booked.`,
+        `New booking request received for "${property.title}".`,
         'general',
         data.propertyId
       );
@@ -84,7 +56,7 @@ export class BookingService {
 
     await this.notificationService.createNotification(
       userId,
-      `You successfully booked "${property.title}".`,
+      `Booking request sent for "${property.title}".`,
       'general',
       data.propertyId
     );
@@ -94,7 +66,8 @@ export class BookingService {
 
   async getBookingsByProperty(propertyId: string, ownerId: string) {
     const property = await this.propertyService.getPropertyById(propertyId);
-    if (!property || property.owner.toString() !== ownerId) throw new Error("Unauthorized");
+    const propertyOwnerId = property ? this.toId((property as any).owner) : "";
+    if (!property || propertyOwnerId !== ownerId) throw new Error("Unauthorized");
 
     return await this.bookingRepository.findByProperty(propertyId);
   }
@@ -103,19 +76,34 @@ export class BookingService {
     return await this.bookingRepository.findByUser(userId);
   }
 
-  async updateBookingStatus(bookingId: string, status: 'approved' | 'rejected', adminId: string) {
+  async getOwnerBookingRequests(ownerId: string) {
+    return await this.bookingRepository.findByOwner(ownerId);
+  }
+
+  async getAllBookingsForAdmin() {
+    return await this.bookingRepository.findAll();
+  }
+
+  async updateBookingStatus(bookingId: string, status: 'approved' | 'rejected', ownerId: string) {
     const currentBooking = await this.bookingRepository.findById(bookingId);
     if (!currentBooking) throw new Error("Booking not found");
 
     const bookingPropertyId = this.toId(currentBooking.property);
     const bookingUserId = this.toId(currentBooking.user);
+    const bookingOwnerId = this.toId((currentBooking as any).owner);
+
+    if (bookingOwnerId !== ownerId) {
+      throw new Error("Unauthorized");
+    }
+
+    if (currentBooking.status !== 'pending') {
+      throw new Error("Only pending requests can be updated");
+    }
 
     if (status === 'approved') {
-      const property = await this.propertyService.getPropertyById(bookingPropertyId);
-      if (!property) throw new Error("Property not found");
-
-      if (property.assignedTo && property.assignedTo.toString() !== bookingUserId) {
-        throw new Error("Property is already assigned/booked by another user");
+      const approved = await this.bookingRepository.findApprovedByProperty(bookingPropertyId);
+      if (approved && approved._id.toString() !== bookingId) {
+        throw new Error("This property already has an approved booking");
       }
     }
 
@@ -129,9 +117,25 @@ export class BookingService {
       );
 
       if (status === 'approved') {
-        // Assign property
-        await this.propertyService.assignProperty(bookingPropertyId, bookingUserId, adminId);
+        await Property.findByIdAndUpdate(
+          bookingPropertyId,
+          {
+            $set: {
+              assignedTo: bookingUserId,
+              status: 'booked'
+            }
+          },
+          { new: true }
+        );
+
         await this.bookingRepository.rejectAllOthersForProperty(bookingPropertyId, bookingUserId);
+
+        await this.notificationService.createNotification(
+          ownerId,
+          `You approved a booking request for one of your properties.`,
+          'status_update',
+          bookingPropertyId
+        );
       }
     }
     return booking;
