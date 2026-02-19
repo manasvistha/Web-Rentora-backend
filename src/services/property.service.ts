@@ -70,10 +70,35 @@ export class PropertyService {
     return await this.propertyRepository.findByQuery(query);
   }
 
+  async filterProperties(filters: any) {
+    const properties = await this.propertyRepository.filterProperties(filters);
+    const baseUrl = (process.env.BASE_URL || 'http://localhost:5000').replace(/\/$/, '');
+
+    const makeFullUrl = (image: string) => {
+      if (!image) return image;
+      if (/^https?:\/\//i.test(image)) return image;
+      return `${baseUrl}${image.startsWith('/') ? '' : '/'}${image}`;
+    };
+
+    return properties.map((property) => {
+      property.images = property.images.map((image) => makeFullUrl(image));
+      return property;
+    });
+  }
+
   async updateProperty(id: string, data: UpdatePropertyDto, ownerId: string) {
     const property = await this.propertyRepository.findById(id);
     if (!property) throw new Error("Property not found");
-    if (property.owner.toString() !== ownerId) throw new Error("Unauthorized");
+    
+    // Robust ownership check using MongoDB ObjectId equals method
+    const isOwner = (property.owner as any).equals ? 
+      (property.owner as any).equals(ownerId) : 
+      property.owner.toString() === ownerId.toString();
+    
+    if (!isOwner) {
+      console.error(`Ownership check failed: property.owner=${property.owner}, userId=${ownerId}`);
+      throw new Error("Unauthorized");
+    }
 
     return await this.propertyRepository.update(id, data);
   }
@@ -81,7 +106,16 @@ export class PropertyService {
   async deleteProperty(id: string, ownerId: string) {
     const property = await this.propertyRepository.findById(id);
     if (!property) throw new Error("Property not found");
-    if (property.owner.toString() !== ownerId) throw new Error("Unauthorized");
+    
+    // Robust ownership check using MongoDB ObjectId equals method
+    const isOwner = (property.owner as any).equals ? 
+      (property.owner as any).equals(ownerId) : 
+      property.owner.toString() === ownerId.toString();
+    
+    if (!isOwner) {
+      console.error(`Ownership check failed: property.owner=${property.owner}, userId=${ownerId}`);
+      throw new Error("Unauthorized");
+    }
 
     return await this.propertyRepository.delete(id);
   }

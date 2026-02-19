@@ -6,6 +6,15 @@ export interface IProperty extends Document {
   description: string;
   location: string;
   price: number; // per month or whatever
+  bedrooms?: number;
+  bathrooms?: number;
+  area?: number; // in sqft
+  propertyType?: string; // room, house, apartment, etc
+  furnished?: boolean;
+  floor?: number;
+  parking?: boolean;
+  petPolicy?: string;
+  amenities?: string[];
   availability: {
     startDate: Date;
     endDate: Date;
@@ -40,6 +49,42 @@ const PropertySchema: Schema = new Schema<IProperty>(
       required: true,
       min: 0
     },
+    bedrooms: {
+      type: Number,
+      default: 0
+    },
+    bathrooms: {
+      type: Number,
+      default: 0
+    },
+    area: {
+      type: Number,
+      default: 0
+    },
+    propertyType: {
+      type: String,
+      enum: ['room', 'house', 'apartment', 'studio', 'other'],
+      default: 'room'
+    },
+    furnished: {
+      type: Boolean,
+      default: false
+    },
+    floor: {
+      type: Number
+    },
+    parking: {
+      type: Boolean,
+      default: false
+    },
+    petPolicy: {
+      type: String,
+      enum: ['allowed', 'not-allowed', 'on-request'],
+      default: 'not-allowed'
+    },
+    amenities: [{
+      type: String
+    }],
     availability: [{
       startDate: { type: Date, required: true },
       endDate: { type: Date, required: true }

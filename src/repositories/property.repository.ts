@@ -29,6 +29,61 @@ export class PropertyRepository {
     }).populate('owner', 'name email');
   }
 
+  async filterProperties(filters: {
+    priceMin?: number;
+    priceMax?: number;
+    bedrooms?: number;
+    bathrooms?: number;
+    propertyType?: string;
+    furnished?: boolean;
+    parking?: boolean;
+    petPolicy?: string;
+    location?: string;
+    amenities?: string[];
+  }): Promise<IProperty[]> {
+    const query: any = {};
+
+    if (filters.priceMin !== undefined || filters.priceMax !== undefined) {
+      query.price = {};
+      if (filters.priceMin !== undefined) query.price.$gte = filters.priceMin;
+      if (filters.priceMax !== undefined) query.price.$lte = filters.priceMax;
+    }
+
+    if (filters.bedrooms !== undefined) {
+      query.bedrooms = { $gte: filters.bedrooms };
+    }
+
+    if (filters.bathrooms !== undefined) {
+      query.bathrooms = { $gte: filters.bathrooms };
+    }
+
+    if (filters.propertyType) {
+      query.propertyType = filters.propertyType;
+    }
+
+    if (filters.furnished !== undefined) {
+      query.furnished = filters.furnished;
+    }
+
+    if (filters.parking !== undefined) {
+      query.parking = filters.parking;
+    }
+
+    if (filters.petPolicy) {
+      query.petPolicy = filters.petPolicy;
+    }
+
+    if (filters.location) {
+      query.location = { $regex: filters.location, $options: 'i' };
+    }
+
+    if (filters.amenities && filters.amenities.length > 0) {
+      query.amenities = { $in: filters.amenities };
+    }
+
+    return await Property.find(query).populate('owner', 'name email').sort({ createdAt: -1 });
+  }
+
   async update(id: string, data: UpdatePropertyDto): Promise<IProperty | null> {
     return await Property.findByIdAndUpdate(id, data, { new: true }).populate('owner', 'name email');
   }

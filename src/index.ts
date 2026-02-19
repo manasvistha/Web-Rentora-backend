@@ -15,6 +15,7 @@ import './models/property.model';
 import './models/conversation.model';
 import './models/notification.model';
 import './models/booking.model';
+import './models/favorite.model';
 
 // Create upload directories if they don't exist
 import fs from 'fs';
@@ -35,6 +36,7 @@ import propertyRoutes from './routes/property.route.ts';
 import bookingRoutes from './routes/booking.route.ts';
 import conversationRoutes from './routes/conversation.route.ts';
 import notificationRoutes from './routes/notification.route.ts';
+import favoriteRoutes from './routes/favorite.route.ts';
 
 const app: Application = express();
 
@@ -104,6 +106,7 @@ app.use('/api/admin', adminUserRoutes);
 app.use('/api/property', propertyRoutes);
 app.use('/api/booking', bookingRoutes);
 app.use('/api/conversation', conversationRoutes);
+app.use('/api/favorite', favoriteRoutes);
 app.use('/api/notification', notificationRoutes);
 
 // Health Check

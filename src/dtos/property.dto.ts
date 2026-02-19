@@ -5,6 +5,15 @@ export const CreatePropertySchema = z.object({
   description: z.string().min(1, "Description is required"),
   location: z.string().min(1, "Location is required"),
   price: z.number().positive("Price must be positive"),
+  bedrooms: z.number().int().nonnegative("Bedrooms must be non-negative").optional(),
+  bathrooms: z.number().int().nonnegative("Bathrooms must be non-negative").optional(),
+  area: z.number().positive("Area must be positive").optional(),
+  propertyType: z.enum(['room', 'house', 'apartment', 'studio', 'other']).optional(),
+  furnished: z.boolean().optional(),
+  floor: z.number().int().optional(),
+  parking: z.boolean().optional(),
+  petPolicy: z.enum(['allowed', 'not-allowed', 'on-request']).optional(),
+  amenities: z.array(z.string()).optional(),
   availability: z.array(z.object({
     startDate: z.string().transform(str => new Date(str)),
     endDate: z.string().transform(str => new Date(str))
