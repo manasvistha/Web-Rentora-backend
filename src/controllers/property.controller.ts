@@ -145,9 +145,90 @@ export class PropertyController {
   async updateProperty(req: Request, res: Response) {
     try {
       const { id } = req.params;
-      const data: UpdatePropertyDto = req.body;
       const ownerId = (req as any).user.id;
-      const property = await this.propertyService.updateProperty(id, data, ownerId);
+
+      // Load existing property to compute image changes
+      const existingProperty = await this.propertyService.getPropertyById(id);
+      if (!existingProperty) return res.status(404).json({ error: "Property not found" });
+
+      // Build data object from form body (partial)
+      const rawBody: any = req.body || {};
+
+      const data: any = {};
+      if (rawBody.title !== undefined) data.title = rawBody.title;
+      if (rawBody.description !== undefined) data.description = rawBody.description;
+      if (rawBody.location !== undefined) data.location = rawBody.location;
+      if (rawBody.price !== undefined) data.price = rawBody.price ? parseFloat(rawBody.price) : undefined;
+      if (rawBody.bedrooms !== undefined) data.bedrooms = rawBody.bedrooms ? parseInt(rawBody.bedrooms) : undefined;
+      if (rawBody.bathrooms !== undefined) data.bathrooms = rawBody.bathrooms ? parseInt(rawBody.bathrooms) : undefined;
+      if (rawBody.area !== undefined) data.area = rawBody.area ? parseFloat(rawBody.area) : undefined;
+      if (rawBody.propertyType !== undefined) data.propertyType = rawBody.propertyType;
+      if (rawBody.furnished !== undefined) data.furnished = rawBody.furnished === 'true' || rawBody.furnished === true;
+      if (rawBody.floor !== undefined) data.floor = rawBody.floor ? parseInt(rawBody.floor) : undefined;
+      if (rawBody.parking !== undefined) data.parking = rawBody.parking === 'true' || rawBody.parking === true;
+      if (rawBody.petPolicy !== undefined) data.petPolicy = rawBody.petPolicy;
+      if (rawBody.amenities !== undefined) {
+        data.amenities = rawBody.amenities ? (Array.isArray(rawBody.amenities) ? rawBody.amenities : String(rawBody.amenities).split(',').map((s: string) => s.trim()).filter((s: string) => s.length > 0)) : [];
+      }
+      if (rawBody.availability !== undefined) {
+        try {
+          data.availability = JSON.parse(rawBody.availability);
+        } catch (err) {
+          // ignore parsing error
+        }
+      }
+
+      // Handle removedImages list from the client (array of full URLs or paths)
+      let removedList: string[] = [];
+      if (rawBody.removedImages) {
+        try {
+          removedList = JSON.parse(rawBody.removedImages);
+        } catch (err) {
+          // if it's already an array
+          if (Array.isArray(rawBody.removedImages)) removedList = rawBody.removedImages;
+        }
+      }
+
+      // Normalize existing images stored in DB (they are stored like '/public/property-images/filename')
+      const currentImages: string[] = existingProperty.images || [];
+
+      // Build set of images to actually remove (match by filename)
+      const path = await import('path');
+      const fs = await import('fs');
+      const uploadsDir = path.join(process.cwd(), 'uploads', 'property-images');
+
+      const removedPathsSet = new Set<string>();
+      removedList.forEach((img: string) => {
+        const filename = path.basename(img);
+        if (filename) removedPathsSet.add(`/public/property-images/${filename}`);
+      });
+
+      // Compute new images array: current minus removed
+      let newImages = currentImages.filter(img => !removedPathsSet.has(img));
+
+      // Add any newly uploaded files
+      if (req.files && Array.isArray(req.files) && (req.files as Express.Multer.File[]).length > 0) {
+        const uploaded = (req.files as Express.Multer.File[]).map(f => `/public/property-images/${f.filename}`);
+        newImages = [...newImages, ...uploaded];
+      }
+
+      // Delete files from disk for removed images
+      for (const rem of Array.from(removedPathsSet)) {
+        try {
+          const filename = path.basename(rem);
+          const filePath = path.join(uploadsDir, filename);
+          if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
+          }
+        } catch (err) {
+          console.error('Failed to delete removed image file', rem, err);
+        }
+      }
+
+      // Attach updated images array
+      data.images = newImages;
+
+      const property = await this.propertyService.updateProperty(id, data as UpdatePropertyDto, ownerId);
       if (!property) return res.status(404).json({ error: "Property not found" });
       res.json(property);
     } catch (error: any) {

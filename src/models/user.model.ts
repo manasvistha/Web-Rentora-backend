@@ -11,9 +11,6 @@ export interface IUser extends Document {
   password: string;
   profilePicture?: string;
   role: 'user' | 'admin';
-  isBanned?: boolean;
-  isSuspended?: boolean;
-  flags?: Array<{ reason: string; date: Date; adminId?: string }>;
   createdAt: Date;
   updatedAt: Date;
   comparePassword(password: string): Promise<boolean>;
@@ -54,21 +51,6 @@ const UserSchema: Schema = new Schema<IUser>(
       enum: ["user", "admin"],
       default: "user",
     },
-    isBanned: {
-      type: Boolean,
-      default: false,    
-    },
-    isSuspended: {
-      type: Boolean,
-      default: false,
-    },
-    flags: [
-      {
-        reason: { type: String, required: true },
-        date: { type: Date, default: Date.now },
-        adminId: { type: Schema.Types.ObjectId, ref: 'User' }
-      }
-    ],
   },
   {
     timestamps: true,

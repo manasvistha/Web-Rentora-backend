@@ -44,7 +44,7 @@ router.get("/my", authorize, propertyController.getMyProperties.bind(propertyCon
 router.get("/search", propertyController.searchByQuery.bind(propertyController));
 router.get("/filter", propertyController.filterProperties.bind(propertyController));
 router.get("/:id", propertyController.getPropertyById.bind(propertyController));
-router.put("/:id", authorize, propertyController.updateProperty.bind(propertyController));
+router.put("/:id", authorize, upload.array('images', 10), propertyController.updateProperty.bind(propertyController));
 router.delete("/:id", authorize, propertyController.deleteProperty.bind(propertyController));
 
 // Admin routes
