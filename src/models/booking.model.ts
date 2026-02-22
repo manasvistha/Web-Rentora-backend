@@ -5,7 +5,7 @@ export interface IBooking extends Document {
   property: mongoose.Types.ObjectId;
   user: mongoose.Types.ObjectId; // tenant/requester
   owner: mongoose.Types.ObjectId; // property owner
-  status: 'pending' | 'approved' | 'rejected';
+  status: 'pending' | 'approved' | 'rejected' | 'cancelled';
   message?: string; // optional message from user
   createdAt: Date;
   updatedAt: Date;
@@ -30,7 +30,7 @@ const BookingSchema: Schema = new Schema<IBooking>(
     },
     status: {
       type: String,
-      enum: ['pending', 'approved', 'rejected'],
+      enum: ['pending', 'approved', 'rejected', 'cancelled'],
       default: 'pending'
     },
     message: String

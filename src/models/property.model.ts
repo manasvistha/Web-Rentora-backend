@@ -5,6 +5,10 @@ export interface IProperty extends Document {
   title: string;
   description: string;
   location: string;
+  coordinates?: {
+    latitude: number;
+    longitude: number;
+  };
   price: number; // per month or whatever
   bedrooms?: number;
   bathrooms?: number;
@@ -43,6 +47,18 @@ const PropertySchema: Schema = new Schema<IProperty>(
       type: String,
       required: true,
       trim: true
+    },
+    coordinates: {
+      latitude: {
+        type: Number,
+        min: -90,
+        max: 90
+      },
+      longitude: {
+        type: Number,
+        min: -180,
+        max: 180
+      }
     },
     price: {
       type: Number,
@@ -111,5 +127,7 @@ const PropertySchema: Schema = new Schema<IProperty>(
     timestamps: true
   }
 );
+
+PropertySchema.index({ "coordinates.latitude": 1, "coordinates.longitude": 1 });
 
 export default mongoose.model<IProperty>('Property', PropertySchema);

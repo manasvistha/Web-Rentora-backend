@@ -1,10 +1,11 @@
 import Conversation, { IConversation } from "../models/conversation.model";
-import { CreateConversationDto, SendMessageDto } from "../dtos/conversation.dto";
+import { CreateConversationDto } from "../dtos/conversation.dto";
 
 export class ConversationRepository {
-  async create(data: CreateConversationDto): Promise<IConversation> {
+  async create(data: CreateConversationDto & { booking?: string }): Promise<IConversation> {
     const conversation = new Conversation({
-      participants: data.participants
+      participants: data.participants,
+      booking: data.booking
     });
     return await conversation.save();
   }
@@ -19,6 +20,10 @@ export class ConversationRepository {
     return await Conversation.find({
       participants: userId
     }).populate('participants', 'name email').sort({ lastMessageTime: -1 });
+  }
+
+  async findByBooking(bookingId: string): Promise<IConversation | null> {
+    return await Conversation.findOne({ booking: bookingId }).populate('participants', 'name email');
   }
 
   async addMessage(conversationId: string, senderId: string, content: string): Promise<IConversation | null> {

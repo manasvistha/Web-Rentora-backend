@@ -5,6 +5,45 @@ import { CreatePropertySchema, CreatePropertyDto, UpdatePropertyDto } from "../d
 export class PropertyController {
   private propertyService = new PropertyService();
 
+  private parseCoordinates(body: any): { latitude: number; longitude: number } | undefined {
+    const hasCoordinatesPayload =
+      body?.coordinates !== undefined ||
+      body?.latitude !== undefined ||
+      body?.longitude !== undefined;
+
+    if (!hasCoordinatesPayload) return undefined;
+
+    // Allow explicit removal from update payload.
+    if (body?.coordinates === "" || body?.coordinates === null || body?.coordinates === "null") {
+      return undefined;
+    }
+
+    let parsedCoordinates: any = body?.coordinates;
+    if (typeof parsedCoordinates === "string" && parsedCoordinates.trim().length > 0) {
+      try {
+        parsedCoordinates = JSON.parse(parsedCoordinates);
+      } catch {
+        throw new Error("Invalid coordinates payload");
+      }
+    }
+
+    const rawLatitude = parsedCoordinates?.latitude ?? body?.latitude;
+    const rawLongitude = parsedCoordinates?.longitude ?? body?.longitude;
+
+    if (rawLatitude === undefined || rawLongitude === undefined || rawLatitude === "" || rawLongitude === "") {
+      throw new Error("Both latitude and longitude are required when coordinates are provided");
+    }
+
+    const latitude = typeof rawLatitude === "number" ? rawLatitude : parseFloat(String(rawLatitude));
+    const longitude = typeof rawLongitude === "number" ? rawLongitude : parseFloat(String(rawLongitude));
+
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+      throw new Error("Coordinates must be valid numbers");
+    }
+
+    return { latitude, longitude };
+  }
+
   async createProperty(req: Request, res: Response) {
     try {
       console.log('Create property request:', {
@@ -18,6 +57,7 @@ export class PropertyController {
         title: req.body.title,
         description: req.body.description,
         location: req.body.location,
+        coordinates: this.parseCoordinates(req.body),
         price: req.body.price ? parseFloat(req.body.price) : 0,
         bedrooms: req.body.bedrooms ? parseInt(req.body.bedrooms) : undefined,
         bathrooms: req.body.bathrooms ? parseInt(req.body.bathrooms) : undefined,
@@ -158,6 +198,9 @@ export class PropertyController {
       if (rawBody.title !== undefined) data.title = rawBody.title;
       if (rawBody.description !== undefined) data.description = rawBody.description;
       if (rawBody.location !== undefined) data.location = rawBody.location;
+      if (rawBody.coordinates !== undefined || rawBody.latitude !== undefined || rawBody.longitude !== undefined) {
+        data.coordinates = this.parseCoordinates(rawBody);
+      }
       if (rawBody.price !== undefined) data.price = rawBody.price ? parseFloat(rawBody.price) : undefined;
       if (rawBody.bedrooms !== undefined) data.bedrooms = rawBody.bedrooms ? parseInt(rawBody.bedrooms) : undefined;
       if (rawBody.bathrooms !== undefined) data.bathrooms = rawBody.bathrooms ? parseInt(rawBody.bathrooms) : undefined;

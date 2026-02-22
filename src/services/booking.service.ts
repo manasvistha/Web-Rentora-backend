@@ -4,6 +4,8 @@ import { NotificationService } from "./notification.service";
 import { CreateBookingDto } from "../dtos/booking.dto";
 import Property from "../models/property.model";
 
+type OwnerBookingDecisionStatus = 'approved' | 'rejected';
+
 export class BookingService {
   private bookingRepository = new BookingRepository();
   private propertyService = new PropertyService();
@@ -80,11 +82,27 @@ export class BookingService {
     return await this.bookingRepository.findByOwner(ownerId);
   }
 
+  async getBookingByIdForParticipant(bookingId: string, requesterId: string) {
+    const booking = await this.bookingRepository.findById(bookingId);
+    if (!booking) {
+      throw new Error("Booking not found");
+    }
+
+    const bookingUserId = this.toId(booking.user);
+    const bookingOwnerId = this.toId((booking as any).owner);
+
+    if (bookingUserId !== requesterId && bookingOwnerId !== requesterId) {
+      throw new Error("Unauthorized");
+    }
+
+    return booking;
+  }
+
   async getAllBookingsForAdmin() {
     return await this.bookingRepository.findAll();
   }
 
-  async updateBookingStatus(bookingId: string, status: 'approved' | 'rejected', ownerId: string) {
+  async updateBookingStatus(bookingId: string, status: OwnerBookingDecisionStatus, ownerId: string) {
     const currentBooking = await this.bookingRepository.findById(bookingId);
     if (!currentBooking) throw new Error("Booking not found");
 
@@ -138,6 +156,49 @@ export class BookingService {
         );
       }
     }
+    return booking;
+  }
+
+  async cancelBookingByUser(bookingId: string, userId: string) {
+    const currentBooking = await this.bookingRepository.findById(bookingId);
+    if (!currentBooking) {
+      throw new Error("Booking not found");
+    }
+
+    const bookingUserId = this.toId(currentBooking.user);
+    const bookingOwnerId = this.toId((currentBooking as any).owner);
+    const bookingPropertyId = this.toId(currentBooking.property);
+
+    if (bookingUserId !== userId) {
+      throw new Error("Unauthorized");
+    }
+
+    if (currentBooking.status !== 'pending') {
+      throw new Error("Only pending bookings can be cancelled");
+    }
+
+    const booking = await this.bookingRepository.updateStatus(bookingId, 'cancelled');
+
+    if (booking) {
+      const propertyTitle = typeof currentBooking.property === "object" && (currentBooking.property as any)?.title
+        ? (currentBooking.property as any).title
+        : "the property";
+
+      await this.notificationService.createNotification(
+        bookingOwnerId,
+        `A booking request for "${propertyTitle}" was cancelled by the user.`,
+        'status_update',
+        bookingPropertyId
+      );
+
+      await this.notificationService.createNotification(
+        userId,
+        `You cancelled your booking request for "${propertyTitle}".`,
+        'status_update',
+        bookingPropertyId
+      );
+    }
+
     return booking;
   }
 }

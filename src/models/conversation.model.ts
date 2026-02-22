@@ -9,6 +9,7 @@ export interface IMessage {
 export interface IConversation extends Document {
   _id: mongoose.Types.ObjectId;
   participants: mongoose.Types.ObjectId[]; // user ids
+  booking?: mongoose.Types.ObjectId;
   messages: IMessage[];
   lastMessage?: string;
   lastMessageTime?: Date;
@@ -39,6 +40,10 @@ const ConversationSchema: Schema = new Schema<IConversation>(
       ref: 'User',
       required: true
     }],
+    booking: {
+      type: Schema.Types.ObjectId,
+      ref: 'Booking'
+    },
     messages: [MessageSchema],
     lastMessage: String,
     lastMessageTime: Date
@@ -50,5 +55,6 @@ const ConversationSchema: Schema = new Schema<IConversation>(
 
 // Index for efficient querying
 ConversationSchema.index({ participants: 1 });
+ConversationSchema.index({ booking: 1 }, { unique: true, sparse: true });
 
 export default mongoose.model<IConversation>('Conversation', ConversationSchema);

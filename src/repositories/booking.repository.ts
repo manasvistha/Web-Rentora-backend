@@ -42,8 +42,12 @@ export class BookingRepository {
       .sort({ createdAt: -1 });
   }
 
-  async updateStatus(bookingId: string, status: 'pending' | 'approved' | 'rejected'): Promise<IBooking | null> {
+  async updateStatus(bookingId: string, status: 'pending' | 'approved' | 'rejected' | 'cancelled'): Promise<IBooking | null> {
     return await Booking.findByIdAndUpdate(bookingId, { status }, { new: true });
+  }
+
+  async updateOwner(bookingId: string, ownerId: string): Promise<IBooking | null> {
+    return await Booking.findByIdAndUpdate(bookingId, { owner: ownerId }, { new: true });
   }
 
   async findById(id: string): Promise<IBooking | null> {
