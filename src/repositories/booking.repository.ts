@@ -7,7 +7,9 @@ export class BookingRepository {
       property: data.propertyId,
       user: data.user,
       owner: data.owner,
-      message: data.message
+      message: data.message,
+      tenantInfo: data.tenantInfo || undefined,
+      payment: data.payment || undefined
     });
     return await booking.save();
   }

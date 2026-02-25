@@ -9,6 +9,7 @@ export const CreateConversationSchema = z.object({
         .regex(/^[a-f\d]{24}$/i, "Each participant must be a valid user id")
     )
     .min(2, "At least two participants required")
+    .max(2, "Conversation must be between exactly two users")
 });
 
 export const SendMessageSchema = z.object({

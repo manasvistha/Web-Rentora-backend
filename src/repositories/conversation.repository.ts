@@ -1,5 +1,6 @@
 import Conversation, { IConversation } from "../models/conversation.model";
 import { CreateConversationDto } from "../dtos/conversation.dto";
+import mongoose from "mongoose";
 
 export class ConversationRepository {
   async create(data: CreateConversationDto & { booking?: string }): Promise<IConversation> {
@@ -17,6 +18,10 @@ export class ConversationRepository {
   }
 
   async findByUser(userId: string): Promise<IConversation[]> {
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return [];
+    }
+
     return await Conversation.find({
       participants: userId
     }).populate('participants', 'name email').sort({ lastMessageTime: -1 });

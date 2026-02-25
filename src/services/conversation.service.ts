@@ -78,8 +78,8 @@ export class ConversationService {
       throw new Error("Unauthorized");
     }
 
-    if (uniqueParticipants.length < 2) {
-      throw new Error("At least two participants required");
+    if (uniqueParticipants.length !== 2) {
+      throw new Error("Conversation must be between exactly two users");
     }
 
     // Check if conversation already exists

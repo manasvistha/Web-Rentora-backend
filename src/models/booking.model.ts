@@ -7,6 +7,20 @@ export interface IBooking extends Document {
   owner: mongoose.Types.ObjectId; // property owner
   status: 'pending' | 'approved' | 'rejected' | 'cancelled';
   message?: string; // optional message from user
+  tenantInfo?: {
+    name?: string;
+    email?: string;
+    phone?: string;
+    idNumber?: string;
+  };
+  payment?: {
+    method?: string;
+    amount?: number;
+    currency?: string;
+    status?: 'pending' | 'success' | 'failed';
+    transactionId?: string;
+    meta?: any;
+  };
   createdAt: Date;
   updatedAt: Date;
 }
@@ -34,6 +48,21 @@ const BookingSchema: Schema = new Schema<IBooking>(
       default: 'pending'
     },
     message: String
+    ,
+    tenantInfo: {
+      name: String,
+      email: String,
+      phone: String,
+      idNumber: String
+    },
+    payment: {
+      method: String,
+      amount: Number,
+      currency: String,
+      status: String,
+      transactionId: String,
+      meta: Schema.Types.Mixed
+    }
   },
   {
     timestamps: true
