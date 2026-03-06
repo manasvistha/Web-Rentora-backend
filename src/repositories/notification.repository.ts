@@ -11,8 +11,21 @@ export class NotificationRepository {
     return await notification.save();
   }
 
-  async findByUser(userId: string, limit: number = 50): Promise<INotification[]> {
-    return await Notification.find({ user: userId }).sort({ createdAt: -1 }).limit(limit);
+  async findByUser(userId: string, page: number = 1, limit: number = 20): Promise<{ notifications: INotification[]; total: number; page: number; pages: number }> {
+    const skip = (page - 1) * limit;
+    const [notifications, total] = await Promise.all([
+      Notification.find({ user: userId })
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit),
+      Notification.countDocuments({ user: userId })
+    ]);
+    return {
+      notifications,
+      total,
+      page,
+      pages: Math.ceil(total / limit)
+    };
   }
 
   async markAsRead(notificationId: string): Promise<INotification | null> {

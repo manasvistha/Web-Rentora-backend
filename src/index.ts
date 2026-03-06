@@ -15,6 +15,7 @@ import './models/property.model';
 import './models/conversation.model';
 import './models/notification.model';
 import './models/booking.model';
+import './models/favorite.model';
 
 // Create upload directories if they don't exist
 import fs from 'fs';
@@ -35,6 +36,7 @@ import propertyRoutes from './routes/property.route.ts';
 import bookingRoutes from './routes/booking.route.ts';
 import conversationRoutes from './routes/conversation.route.ts';
 import notificationRoutes from './routes/notification.route.ts';
+import favoriteRoutes from './routes/favorite.route.ts';
 
 const app: Application = express();
 
@@ -89,11 +91,12 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   next();
 });
 
-// 6. RATE LIMITER
+// 6. RATE LIMITER (higher limit for development)
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, 
-  max: 100, 
-  message: { success: false, message: "Too many requests, please try again later." }
+  max: 1000,  // Increased from 100 for development
+  message: { success: false, message: "Too many requests, please try again later." },
+  skip: (req) => process.env.NODE_ENV === 'development' // Skip in dev mode
 });
 app.use('/api/', limiter);
 
@@ -103,6 +106,7 @@ app.use('/api/admin', adminUserRoutes);
 app.use('/api/property', propertyRoutes);
 app.use('/api/booking', bookingRoutes);
 app.use('/api/conversation', conversationRoutes);
+app.use('/api/favorite', favoriteRoutes);
 app.use('/api/notification', notificationRoutes);
 
 // Health Check
@@ -135,10 +139,17 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   });
 });
 
-// 9. SERVER START
+// 9. EXPORT APP & OPTIONAL SERVER START
 const port = PORT || 5000;
-app.listen(Number(port), "0.0.0.0", () => {
-  console.log(`\n✅ Rentora Server Started`);
-  console.log(`📡 Port: ${port}`);
-  console.log(`📱 For Flutter connection, use your machine's IP address.`);
-});
+
+// Export the Express app for testing
+export default app;
+
+// Start server only when running index.ts directly
+if (require.main === module) {
+  app.listen(Number(port), "0.0.0.0", () => {
+    console.log(`\n✅ Rentora Server Started`);
+    console.log(`📡 Port: ${port}`);
+    console.log(`📱 For Flutter connection, use your machine's IP address.`);
+  });
+}

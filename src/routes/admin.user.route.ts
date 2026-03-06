@@ -36,5 +36,6 @@ router.post("/users/:id/promote", authorize, requireAdmin, adminController.promo
 router.get("/properties", authorize, requireAdmin, adminController.getAllProperties);
 router.put("/properties/:id/status", authorize, requireAdmin, adminController.updatePropertyStatus);
 router.delete("/properties/:id", authorize, requireAdmin, adminController.deleteProperty);
+router.get("/bookings", authorize, requireAdmin, adminController.getAllBookings);
 
 export default router;
