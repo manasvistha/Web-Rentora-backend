@@ -1,4 +1,63 @@
 import request from 'supertest';
+// Avoid real DB connections during tests
+jest.mock('../src/database/database.db', () => ({ connectDB: jest.fn() }));
+jest.mock('../src/config/email', () => ({ sendEmail: jest.fn(), transporter: { sendMail: jest.fn() } }));
+// Ensure no real Mongo connection is attempted in this integration shim
+process.env.MONGO_URI = '';
+process.env.LOCAL_DB_URI = '';
+
+// Increase timeout for slow assertions in this integration shim
+jest.setTimeout(20000);
+
+// Mock repositories used by controllers to avoid real mongoose queries
+jest.mock('../src/repositories/property.repository', () => ({
+  PropertyRepository: jest.fn().mockImplementation(() => ({
+    findAll: jest.fn().mockResolvedValue([]),
+    findById: jest.fn().mockResolvedValue(null),
+    findByOwner: jest.fn().mockResolvedValue([]),
+    findByQuery: jest.fn().mockResolvedValue([]),
+    filterProperties: jest.fn().mockResolvedValue([]),
+    create: jest.fn().mockResolvedValue(null),
+    update: jest.fn().mockResolvedValue(null),
+    delete: jest.fn().mockResolvedValue(true),
+    assignToUser: jest.fn().mockResolvedValue(null),
+    updateStatus: jest.fn().mockResolvedValue(null),
+  })),
+}));
+
+jest.mock('../src/repositories/booking.repository', () => ({
+  BookingRepository: jest.fn().mockImplementation(() => ({
+    create: jest.fn().mockResolvedValue(null),
+    findByProperty: jest.fn().mockResolvedValue([]),
+    findByUser: jest.fn().mockResolvedValue([]),
+    findByOwner: jest.fn().mockResolvedValue([]),
+    findAll: jest.fn().mockResolvedValue([]),
+    findById: jest.fn().mockResolvedValue(null),
+    findExistingByPropertyAndUser: jest.fn().mockResolvedValue(null),
+    findApprovedByProperty: jest.fn().mockResolvedValue(null),
+    updateStatus: jest.fn().mockResolvedValue(null),
+    rejectAllOthersForProperty: jest.fn().mockResolvedValue(undefined),
+  })),
+}));
+
+jest.mock('../src/repositories/user.repository', () => ({
+  UserRepository: jest.fn().mockImplementation(() => ({
+    getUserByEmail: jest.fn().mockResolvedValue(null),
+    getUserById: jest.fn().mockResolvedValue(null),
+    createUser: jest.fn().mockResolvedValue(null),
+    getUserByUsername: jest.fn().mockResolvedValue(null),
+  })),
+}));
+
+jest.mock('../src/repositories/notification.repository', () => ({
+  NotificationRepository: jest.fn().mockImplementation(() => ({
+    create: jest.fn().mockResolvedValue(null),
+    findByUser: jest.fn().mockResolvedValue({ notifications: [], total: 0, page: 1, pages: 0 }),
+    markAsRead: jest.fn().mockResolvedValue(null),
+    markAllAsRead: jest.fn().mockResolvedValue(undefined),
+    getUnreadCount: jest.fn().mockResolvedValue(0),
+  })),
+}));
 import app from '../src/index';
 import mongoose from 'mongoose';
 import { beforeAll, afterAll, describe, test, expect } from '@jest/globals';
