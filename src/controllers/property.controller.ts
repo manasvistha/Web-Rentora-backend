@@ -232,18 +232,27 @@ export class PropertyController {
         }
       }
 
-      // Normalize existing images stored in DB (they are stored like '/public/property-images/filename')
-      const currentImages: string[] = existingProperty.images || [];
-
-      // Build set of images to actually remove (match by filename)
+      // Normalize image values (full URL or path) to canonical stored path.
       const path = await import('path');
       const fs = await import('fs');
       const uploadsDir = path.join(process.cwd(), 'uploads', 'property-images');
 
+      const toStoredImagePath = (img: string): string => {
+        const filename = path.basename(String(img || ''));
+        return filename ? `/public/property-images/${filename}` : '';
+      };
+
+      // getPropertyById may return full URLs; normalize before diffing/updating.
+      const currentImages: string[] = (existingProperty.images || [])
+        .map((img: string) => toStoredImagePath(img))
+        .filter((img: string) => img.length > 0);
+
+      // Build set of images to remove (match by filename/canonical path)
+
       const removedPathsSet = new Set<string>();
       removedList.forEach((img: string) => {
-        const filename = path.basename(img);
-        if (filename) removedPathsSet.add(`/public/property-images/${filename}`);
+        const normalized = toStoredImagePath(img);
+        if (normalized) removedPathsSet.add(normalized);
       });
 
       // Compute new images array: current minus removed

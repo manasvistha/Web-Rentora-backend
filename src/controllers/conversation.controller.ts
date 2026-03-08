@@ -101,6 +101,23 @@ export class ConversationController {
     }
   }
 
+  async deleteConversation(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const userId = this.getAuthenticatedUserId(req);
+      const deleted = await this.conversationService.deleteConversation(id, userId);
+      if (!deleted) {
+        return res.status(404).json({ error: "Conversation not found" });
+      }
+      res.json({ success: true });
+    } catch (error: any) {
+      if (error.message === "Conversation not found or unauthorized") {
+        return res.status(404).json({ error: error.message });
+      }
+      res.status(400).json({ error: error.message });
+    }
+  }
+
   async getBookingConversation(req: Request, res: Response) {
     try {
       const { bookingId } = req.params;

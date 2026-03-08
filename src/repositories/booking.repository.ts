@@ -18,13 +18,13 @@ export class BookingRepository {
     return await Booking.find({ property: propertyId })
       .populate('user', 'name email')
       .populate('owner', 'name email')
-      .populate('property', 'title location price status')
+      .populate('property', 'title location price status images image imageUrl')
       .sort({ createdAt: -1 });
   }
 
   async findByUser(userId: string): Promise<IBooking[]> {
     return await Booking.find({ user: userId })
-      .populate('property', 'title location price status')
+      .populate('property', 'title location price status images image imageUrl')
       .populate('owner', 'name email')
       .sort({ createdAt: -1 });
   }
@@ -32,7 +32,7 @@ export class BookingRepository {
   async findByOwner(ownerId: string): Promise<IBooking[]> {
     return await Booking.find({ owner: ownerId })
       .populate('user', 'name email')
-      .populate('property', 'title location price status')
+      .populate('property', 'title location price status images image imageUrl')
       .sort({ createdAt: -1 });
   }
 
@@ -40,7 +40,7 @@ export class BookingRepository {
     return await Booking.find({})
       .populate('user', 'name email')
       .populate('owner', 'name email')
-      .populate('property', 'title location price status')
+      .populate('property', 'title location price status images image imageUrl')
       .sort({ createdAt: -1 });
   }
 
@@ -56,7 +56,7 @@ export class BookingRepository {
     return await Booking.findById(id)
       .populate('user', 'name email')
       .populate('owner', 'name email')
-      .populate('property', 'title location price status owner');
+      .populate('property', 'title location price status images image imageUrl owner');
   }
 
   async findExistingByPropertyAndUser(propertyId: string, userId: string): Promise<IBooking | null> {

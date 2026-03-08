@@ -127,6 +127,15 @@ export class ConversationService {
     return conversation;
   }
 
+  async deleteConversation(id: string, userId: string) {
+    const conversation = await this.conversationRepository.findById(id);
+    if (!conversation || !this.isParticipant(conversation, userId)) {
+      throw new Error("Conversation not found or unauthorized");
+    }
+
+    return await this.conversationRepository.deleteById(id);
+  }
+
   private async getBookingForParticipant(bookingId: string, userId: string) {
     const booking = await this.bookingRepository.findById(bookingId);
     if (!booking) {
