@@ -18,6 +18,9 @@ router.post('/booking/:bookingId/message', authorize, conversationController.sen
 // Get specific conversation
 router.get('/:id', authorize, conversationController.getConversationById.bind(conversationController));
 
+// Delete conversation for participant
+router.delete('/:id', authorize, conversationController.deleteConversation.bind(conversationController));
+
 // Send message in conversation
 router.post('/:id/message', authorize, conversationController.sendMessage.bind(conversationController));
 

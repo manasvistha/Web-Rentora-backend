@@ -51,4 +51,8 @@ export class ConversationRepository {
   async findById(id: string): Promise<IConversation | null> {
     return await Conversation.findById(id).populate('participants', 'name email');
   }
+
+  async deleteById(id: string): Promise<IConversation | null> {
+    return await Conversation.findByIdAndDelete(id);
+  }
 }
